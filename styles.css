@@ -1,0 +1,248 @@
+body {
+  margin: 0;
+  padding: 3rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f2f7f5;
+  color: #000000;
+  font-size: 1.15rem;
+  line-height: 1.6;
+}
+
+h1 {
+  font-weight: 600;
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.quiz-section {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  width: 100%;
+}
+
+.question-block {
+  padding: 1.5rem 2rem;
+  background-color: #ffffff;
+  border-left: 10px solid #184e77;
+  border-radius: 10px;
+  width: 100%;
+}
+
+.question-block p {
+  margin-bottom: 1.2rem;
+}
+
+.question-title {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.material-box {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.material-box:last-of-type {
+  margin-bottom: 0;
+}
+
+.material-box blockquote p,
+.material-box .content-text {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+figure,
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+figcaption {
+  font-size: 1.1rem;
+}
+
+.options label {
+  display: block;
+  margin-bottom: 0.7rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.options input[type="radio"] {
+  margin-right: 0.6rem;
+  vertical-align: middle;
+}
+
+.check-button,
+summary {
+  margin-top: 1.4rem;
+  padding: 0.65rem 1.8rem;
+  font-size: 1.1rem;
+  background-color: #184e77;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  user-select: none;
+  display: inline-block;
+}
+
+.check-button:hover,
+summary:hover {
+  background-color: #0f2e4d;
+}
+
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.feedback {
+  font-weight: 600;
+  font-size: 1.2rem;
+  padding: 0;
+  border-radius: 0;
+  display: inline;
+  background: none;
+  color: inherit; /* keeps correct/incorrect colors */
+  margin-top: 0.5rem; /* optional spacing above symbol */
+}
+
+.correct {
+  color: #28a745; /* bright green */
+}
+
+.incorrect {
+  color: #9d0208; /* red for incorrect */
+}
+
+
+.explanation {
+  margin-top: 1rem;
+  background-color: #e3f2fd;
+  padding: 1rem 1.5rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  color: #184e77;
+  font-weight: 500;
+  display: none;
+}
+
+.answer-box {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background-color: #e3f2fd;
+  border-radius: 10px;
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: #184e77;
+}
+
+.math-scroll {
+  overflow-x: auto;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.math-scroll mjx-container[display="block"] {
+  min-width: max-content;
+}
+
+/* Disable only left-click on MathJax-rendered math */
+mjx-container {
+  user-select: auto;
+  pointer-events: auto;
+}
+
+mjx-container[mjx-texclass] {
+  user-select: auto;
+  pointer-events: auto;
+}
+
+/* Block left-clicks using JS-style CSS trick */
+mjx-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: auto;
+}
+
+/* Styling for the data table */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.data-table th, .data-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+/* For browsers that support :has() */
+.material-box:has(.data-table:only-of-type) {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+}
+
+/* Fallback for browsers without :has() */
+@supports not (selector(:has(.data-table))) {
+  .material-box .data-table:only-of-type {
+    padding: 0;
+    border: none;
+    background-color: transparent;
+  }
+}
+
+.single-table-box {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+}
+
+/* Prevent left-clicks via overlay */
+mjx-container::after {
+  pointer-events: none;
+}
+
+mjx-container:active {
+  pointer-events: none;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 2rem 1rem;
+  }
+
+  .quiz-section {
+    max-width: 100%;
+    padding: 0;
+  }
+}
