@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HTML Injector</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2rem; }
+  h2 { margin-bottom: 1rem; }
+  textarea { width: 100%; height: 300px; font-family: monospace; font-size: 14px; padding: 10px; }
+  button { margin-top: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h2>Paste HTML Here</h2>
+<textarea id="htmlCode" placeholder="Paste your HTML"></textarea>
+<br>
+<button onclick="runCode()">Open in New Tab</button>
+
+<script>
+let newTab = null;
+
+function runCode() {
+    const html = document.getElementById("htmlCode").value;
+
+    if (!newTab || newTab.closed) {
+        newTab = window.open("", "_blank");
+    }
+
+    // Write HTML only
+    newTab.document.open();
+    newTab.document.write(`
+        <html>
+        <head></head>
+        <body>
+            ${html}
+        </body>
+        </html>
+    `);
+    newTab.document.close();
+
+    // Inject CSS and JS from the same repo (relative URLs)
+    const link = newTab.document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'style.css';   // relative to repo root
+    newTab.document.head.appendChild(link);
+
+    const script = newTab.document.createElement('script');
+    script.src = 'script.js';  // relative to repo root
+    newTab.document.body.appendChild(script);
+}
+</script>
+
+</body>
+</html>
