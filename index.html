@@ -98,22 +98,28 @@
     let newTab = null;
 
     async function fetchResources() {
-      const runBtn = document.getElementById('runBtn');
-      runBtn.textContent = 'Loading Your Files...';
-      runBtn.disabled = true;
-
-      const cssDocId = "1Mi5cezG3ixAzuAgd5BUOC4ETqYK5izeapQZ3a1T-poI";
-      const jsDocId = "1rLqkOIGsuNlfKZAz85ZGCZhSKmXHdO6vI_p2FU7A0dE";
-
-      const fetchDoc = async (docId, textareaId) => {
-        try {
-          const res = await fetch(`https://docs.google.com/document/d/${docId}/export?format=txt`);
-          if (!res.ok) throw new Error(`Fetch failed for ${docId}: ${res.status}`);
-          document.getElementById(textareaId).value = await res.text();
-        } catch (e) {
-          console.error(e);
+          const runBtn = document.getElementById('runBtn');
+          runBtn.textContent = 'Loading Your Files...';
+          runBtn.disabled = true;
+    
+          const fetchFile = async (filePath, textareaId) => {
+            try {
+              const res = await fetch(filePath);
+              if (!res.ok) throw new Error(`Fetch failed for ${filePath}: ${res.status}`);
+              document.getElementById(textareaId).value = await res.text();
+            } catch (e) {
+              console.error(e);
+            }
+          };
+    
+          await Promise.all([
+            fetchFile('./script.js', "jsCode"),
+            fetchFile('./styles.css', "cssCode")
+          ]);
+    
+          runBtn.textContent = 'Generate Quiz';
+          runBtn.disabled = false;
         }
-      };
 
       await Promise.all([
         fetchDoc(jsDocId, "jsCode"),
