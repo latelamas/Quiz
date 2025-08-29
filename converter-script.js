@@ -147,13 +147,15 @@ function parseQuizdown(text) {
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-            data: functions.map((fn, i) => {
+            data: functions.map((fnString, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
-              // Add closed: true to fill the area under the function's curve
+              const parts = fnString.split(':').map(p => p.trim());
+              const fn = parts[0];
+              const color = parts.length > 1 ? parts[1] : colors[i % colors.length];
+
               return { 
                   fn: fn, 
-                  color: colors[i % colors.length],
-                  closed: true 
+                  color: color
               };
             })
           };
