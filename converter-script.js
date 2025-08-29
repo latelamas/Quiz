@@ -173,7 +173,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Plotly.js plotting system - With axis labels and grids
+// Plotly.js plotting system - X-axis fixed at y=0
 window.plotData = ${JSON.stringify(globalPlotData)};
 
 window.initPlots = function() {
@@ -261,7 +261,7 @@ window.initPlots = function() {
                     hoverinfo: 'none'
                 };
                 
-                // Layout with axis labels and grids
+                // Layout with x-axis at y=0
                 const layout = {
                     autosize: true,
                     margin: {
@@ -277,8 +277,8 @@ window.initPlots = function() {
                         gridcolor: '#f0f0f0',
                         gridwidth: 1,
                         zeroline: true,
-                        zerolinecolor: '#ddd',
-                        zerolinewidth: 1,
+                        zerolinecolor: '#333',
+                        zerolinewidth: 2,
                         showline: true,
                         linecolor: '#333',
                         linewidth: 1,
@@ -288,7 +288,8 @@ window.initPlots = function() {
                             color: '#666'
                         },
                         fixedrange: true,
-                        range: [-10, 10]
+                        range: [-10, 10],
+                        side: 'bottom'
                     },
                     yaxis: {
                         title: 'y',
@@ -296,8 +297,8 @@ window.initPlots = function() {
                         gridcolor: '#f0f0f0',
                         gridwidth: 1,
                         zeroline: true,
-                        zerolinecolor: '#ddd',
-                        zerolinewidth: 1,
+                        zerolinecolor: '#333',
+                        zerolinewidth: 2,
                         showline: true,
                         linecolor: '#333',
                         linewidth: 1,
@@ -307,7 +308,8 @@ window.initPlots = function() {
                             color: '#666'
                         },
                         fixedrange: true,
-                        range: [-10, 10]
+                        range: [-10, 10],
+                        zeroline: true
                     },
                     showlegend: false,
                     hovermode: false,
