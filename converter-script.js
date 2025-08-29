@@ -159,8 +159,8 @@ function parseQuizdown(text) {
                     const originalXDomain = [...config.xAxis.domain];
                     const originalYDomain = [...config.yAxis.domain];
                     
-                    // Add double-click reset functionality
-                    document.getElementById('${plotId}').addEventListener('dblclick', function(e) {
+                    // Add right-click reset functionality
+                    document.getElementById('${plotId}').addEventListener('contextmenu', function(e) {
                       e.preventDefault();
                       const container = document.getElementById('${plotId}');
                       if (container) {
@@ -269,10 +269,10 @@ function parseQuizdown(text) {
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const hasPlots = quizBody.includes('class="function-plot-container"');
   const functionPlotScript = hasPlots
-    ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
+    ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js    "><\/script>`
     : '';
 
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js    "><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function runCode() {
