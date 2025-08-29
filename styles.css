@@ -16,7 +16,7 @@ h1 {
 }
 
 .quiz-section {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -164,11 +164,30 @@ summary::-webkit-details-marker {
   min-width: max-content;
 }
 
-/* Disable only left-click on MathJax-rendered math */
-mjx-container {
-  user-select: auto;
-  pointer-events: auto;
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+/* Select all text nodes that contain backticks using a CSS-only trick? */
+pre, code { /* Not needed here, we want pure backticks in normal text */ }
+
+/* Trick: wrap backticks visually */
+p, span {
+  white-space: pre-wrap; /* preserve spacing */
+}
+
+span.backtick {
+  font-family: "Fira Code", monospace;
+  color: #184e77;
+  background-color: #cce6ff;
+  padding: 0.2em 0.4em; 
+  border-radius: 6px;        
+  font-size: 0.95em;
+  line-height: 1.4;
+  display: inline-block;
+  box-shadow: inset 0 0 0 1px rgba(24, 78, 119, 0.15); 
+}
+
 
 mjx-container[mjx-texclass] {
   user-select: auto;
