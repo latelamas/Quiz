@@ -107,7 +107,7 @@ function parseQuizdown(text) {
       block = block.replace(/\[(code|quote|table|material|plot)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/gs, (match, type, content) => {
         content = content.trim();
         if (type === 'code') {
-          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
+          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
         } else if (type === 'quote') {
           const parts = content.split('\n—');
           materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
@@ -121,7 +121,6 @@ function parseQuizdown(text) {
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           
-          // Parse simplified plot syntax
           const lines = content.trim().split('\n');
           const functionsLine = lines[0] || 'x';
           const limitsLine = lines[1] || '-10,10';
@@ -129,14 +128,13 @@ function parseQuizdown(text) {
           const functions = functionsLine.split(',').map(f => f.trim());
           const [xMin, xMax] = limitsLine.split(',').map(Number);
           
-          // Generate plot config
           const plotConfig = {
             width: 500,
             height: 300,
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-             functions.map((fn, i) => {
+            data: functions.map((fn, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
               return {
                 fn: fn,
@@ -155,31 +153,11 @@ function parseQuizdown(text) {
                     config.target = '#${plotId}';
                     const plotInstance = functionPlot(config);
                     
-                    // Store original domains for reset
-                    const originalXDomain = [...config.xAxis.domain];
-                    const originalYDomain = [...config.yAxis.domain];
+                    // --- CHANGE: Disable the library's default double-click zoom behavior ---
+                    plotInstance.getPlottable().on('dblclick.zoom', null);
                     
-                    // Add double-click reset functionality
-                    document.getElementById('${plotId}').addEventListener('dblclick', function(e) {
-                      e.preventDefault();
-                      const container = document.getElementById('${plotId}');
-                      if (container) {
-                        try {
-                          // Clear container
-                          while (container.firstChild) {
-                            container.removeChild(container.firstChild);
-                          }
-                          // Re-render with original domains
-                          const resetConfig = JSON.parse(JSON.stringify(config));
-                          resetConfig.target = '#${plotId}';
-                          resetConfig.xAxis.domain = [...originalXDomain];
-                          resetConfig.yAxis.domain = [...originalYDomain];
-                          functionPlot(resetConfig);
-                        } catch (err) {
-                          console.error("Reset failed:", err);
-                        }
-                      }
-                    });
+                    // --- CHANGE: All custom double-click listeners have been removed ---
+
                   } catch (e) {
                     console.error("Plot config error:", e);
                     document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
@@ -234,7 +212,6 @@ function parseQuizdown(text) {
       const qId = `q${qNum}`;
       let html = `<section class="question-block" id="${qId}" ${isMcq ? `data-correct-answer="${String.fromCharCode(97 + options.findIndex(opt => opt.correct))}"` : ''} aria-labelledby="${qId}-title">`;
 
-      // --- Fixed structure: question number and title as separate elements ---
       html += `<p class="question-number" id="${qId}-number">${qNum}.</p>
                <p class="question-title" id="${qId}-title">${questionTitle}</p>`;
 
@@ -317,4 +294,3 @@ function downloadCode() {
   link.click();
   URL.revokeObjectURL(link.href);
 }
-currently when i double click a graph it just zooms in
