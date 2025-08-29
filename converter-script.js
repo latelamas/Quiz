@@ -28,14 +28,11 @@ async function fetchResources() {
 
 fetchResources();
 
-
 function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
 
   let quizTitle = "Generated Quiz";
-  let shuffleOptions = true;
   let questionText = text;
-  const plotObjects = []; // Array for our new native canvas plots
 
   if (text.startsWith('---\n')) {
     const endOfHeaderIndex = text.indexOf('\n---\n');
@@ -47,8 +44,8 @@ function parseQuizdown(text) {
         if (parts.length >= 2) {
           const key = parts[0].trim();
           const value = parts.slice(1).join(':').trim();
+          // ONLY parse title. Shuffle is now gone.
           if (key === 'title') { quizTitle = value; }
-          if (key === 'shuffle') { shuffleOptions = value.toLowerCase() === 'true' || value === '1'; }
         }
       });
     }
@@ -87,50 +84,21 @@ function parseQuizdown(text) {
       const qNum = index + 1;
       let materialsHtml = '';
 
-      // Regex now looks for 'plot'
-      block = block.replace(/\[(code|quote|table|material|plot)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/g, (match, type, attrs, content) => {
+      // --- REGEX MODIFIED: All plotting functionality has been removed ---
+      block = block.replace(/\[(code|quote|table|material)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material)\]/g, (match, type, attrs, content) => {
         content = content.trim();
         if (type === 'code') {
           materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
         } else if (type === 'quote') {
-            // --- THIS LOGIC WAS MISSING ---
             const parts = content.split('\n—');
             materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
         } else if (type === 'material') {
-            // --- THIS LOGIC WAS MISSING ---
             materialsHtml += `<div class="material-box"><p class="content-text">${applyFormatting(content).replace(/\n\n/g, '</p><p class="content-text">')}</p></div>`;
         } else if (type === 'table') {
-            // --- THIS LOGIC WAS MISSING ---
             const rows = content.split('\n').map(r => r.trim().slice(1, -1).split('|').map(c => c.trim()));
             const header = rows[0]; const body = rows.slice(2);
             const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
             materialsHtml += `<div class="material-box">${tableHtml}</div>`;
-        } else if (type === 'plot') {
-          const canvasId = `plot-canvas-${qNum}-${plotObjects.length}`;
-          materialsHtml += `<div class="material-box plot-container"><canvas id="${canvasId}" width="600" height="400"></canvas></div>`;
-
-          const getAttr = (name, defaultValue) => {
-            const match = attrs.match(new RegExp(`${name}\\s*=\\s*"([^"]*)"`));
-            if (!match || !match[1]) return defaultValue;
-            const parsed = match[1].split(',').map(Number);
-            return parsed.length === 2 && !parsed.some(isNaN) ? parsed : defaultValue;
-          };
-          
-          const getStepAttr = (name, defaultValue) => {
-            const match = attrs.match(new RegExp(`${name}\\s*=\\s*"([^"]*)"`));
-            if (!match || !match[1]) return defaultValue;
-            const parsed = Number(match[1]);
-            return isNaN(parsed) ? defaultValue : parsed;
-          };
-
-          plotObjects.push({
-            id: canvasId,
-            funcStr: content.replace(/\^/g, '**'), // Convert ^ to ** for JS
-            xrange: getAttr('xrange', [-5, 5]),
-            yrange: getAttr('yrange', [-5, 5]),
-            xstep: getStepAttr('xstep', 1),
-            ystep: getStepAttr('ystep', 1),
-          });
         }
         return '';
       });
@@ -158,7 +126,12 @@ function parseQuizdown(text) {
       }
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
-      if (options.length > 0 && shuffleOptions) { shuffleArray(options); }
+      
+      // --- SHUFFLE MODIFIED: Always shuffles if there are options. No toggle. ---
+      if (options.length > 0) {
+        shuffleArray(options);
+      }
+
       if (!questionTitle) return '';
       const isMcq = options.length > 0;
       const qId = `q${qNum}`;
@@ -189,123 +162,23 @@ function parseQuizdown(text) {
   return {
     title: quizTitle,
     body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`,
-    plotObjects
   };
 }
 
-function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects) {
-    const finalCss = `
-        .plot-container {
-            padding: 0;
-            border: none;
-            text-align: center; /* Center the canvas */
-            margin-top: 1em;
-            margin-bottom: 1em;
-        }
-        .plot-container canvas {
-            max-width: 100%;
-            height: auto;
-            border: 1px solid #ccc;
-        }
-        ${cssContent}
-    `;
-
-    const plotFunctionCode = `
-    function plotFunctionWithGrid(canvasId, func, xMin, xMax, yMin, yMax, xStep=1, yStep=1) {
-        const canvas = document.getElementById(canvasId);
-        if (!canvas) { console.error("Canvas not found:", canvasId); return; }
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-
-        function xToCanvas(x) { return (x - xMin) / (xMax - xMin) * width; }
-        function yToCanvas(y) { return height - (y - yMin) / (yMax - yMin) * height; }
-
-        ctx.clearRect(0, 0, width, height);
-        ctx.strokeStyle = '#ddd';
-        ctx.lineWidth = 1;
-        for (let x = Math.ceil(xMin/xStep)*xStep; x <= xMax; x += xStep) {
-            if (Math.abs(x - 0) < 0.001) continue;
-            const cx = xToCanvas(x);
-            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, height); ctx.stroke();
-        }
-        for (let y = Math.ceil(yMin/yStep)*yStep; y <= yMax; y += yStep) {
-            if (Math.abs(y - 0) < 0.001) continue;
-            const cy = yToCanvas(y);
-            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(width, cy); ctx.stroke();
-        }
-
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(0, yToCanvas(0)); ctx.lineTo(width, yToCanvas(0)); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(xToCanvas(0), 0); ctx.lineTo(xToCanvas(0), height); ctx.stroke();
-
-        ctx.fillStyle = '#000';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        for (let x = Math.ceil(xMin/xStep)*xStep; x <= xMax; x += xStep) {
-            if (x !== 0) ctx.fillText(x, xToCanvas(x), yToCanvas(0)+5);
-        }
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        for (let y = Math.ceil(yMin/yStep)*yStep; y <= yMax; y += yStep) {
-            if (y !== 0) ctx.fillText(y, xToCanvas(0)-5, yToCanvas(y));
-        }
-
-        ctx.beginPath();
-        ctx.strokeStyle = 'blue';
-        ctx.lineWidth = 2;
-        let first = true;
-        for (let px = 0; px <= width; px++) {
-            let x = xMin + px / width * (xMax - xMin);
-            let y;
-            try { y = func(x); } catch { continue; }
-            if (isNaN(y) || !isFinite(y)) continue;
-            let py = yToCanvas(y);
-            if (first) { ctx.moveTo(px, py); first = false; }
-            else { ctx.lineTo(px, py); }
-        }
-        ctx.stroke();
-    }`;
-
-    const rendererScript = `
-      function renderPlots() {
-        const plotData = ${JSON.stringify(plotObjects)};
-        for (const plot of plotData) {
-          try {
-            const func = new Function('x', 'with(Math) { return ' + plot.funcStr + '; }');
-            plotFunctionWithGrid(
-                plot.id, func,
-                plot.xrange[0], plot.xrange[1],
-                plot.yrange[0], plot.yrange[1],
-                plot.xstep, plot.ystep
-            );
-          } catch (e) {
-            console.error("Failed to plot function for canvas #" + plot.id, e);
-            const canvas = document.getElementById(plot.id);
-            if(canvas) canvas.parentElement.innerHTML = '<p style="color:red;">Error: Invalid function syntax.</p>';
-          }
-        }
-      }
-      window.addEventListener('load', renderPlots);
-    `;
-
+// --- FUNCTION MODIFIED: Simplified to its core purpose. No plotting logic. ---
+function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title>
         <script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script>
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script>
-        <style>${finalCss}</style>
+        <style>${cssContent}</style>
         </head>
         <body>
         ${quizBody}
         <script>${jsContent}<\/script>
-        <script>
-        ${plotFunctionCode}
-        ${rendererScript}
-        <\/script>
         </body></html>`;
 }
 
+// --- FUNCTION MODIFIED: Simplified to call the new createFullHtml. ---
 function runCode() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
@@ -315,7 +188,7 @@ function runCode() {
     return;
   }
   const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotObjects);
+  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
 
   if (!newTab || newTab.closed) newTab = window.open("", "_blank");
   if (!newTab) { alert("Popup blocked!"); return; }
@@ -325,6 +198,7 @@ function runCode() {
   newTab.focus();
 }
 
+// --- FUNCTION MODIFIED: Simplified to call the new createFullHtml. ---
 function downloadCode() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
@@ -334,7 +208,7 @@ function downloadCode() {
     return;
   }
   const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotObjects);
+  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
 
   const blob = new Blob([fullHtml], { type: "text/html" });
   const link = document.createElement("a");
