@@ -21,7 +21,7 @@ async function fetchResources() {
   await Promise.all([
     fetchFile('./script.js', "jsCode"),
     fetchFile('./styles.css', "cssCode"),
-    fetchFile('./plot-handler.js', "plotCode") // Add this line
+    fetchFile('./plot-handler.js', "plotCode")
   ]);
 
   runBtn.textContent = 'Generate Quiz';
@@ -189,9 +189,9 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
             width: 100%;
         }
         .plot-container {
-            width: 80%;
-            max-width: 600px;
-            height: 300px;
+            width: 90%;
+            max-width: 700px;
+            height: 320px;
             border: 1px solid #eee;
             border-radius: 4px;
             margin: 15px auto;
@@ -220,7 +220,7 @@ function runCode() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
   const jsContent = document.getElementById("jsCode").value;
-  const plotContent = document.getElementById("plotCode").value; // Add this line
+  const plotContent = document.getElementById("plotCode").value;
   if (!quizdownContent.trim() || !jsContent.trim() || !cssContent.trim() || !plotContent.trim()) {
     alert("Please wait for resources to load or paste quiz content.");
     return;
@@ -240,7 +240,7 @@ function downloadCode() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
   const jsContent = document.getElementById("jsCode").value;
-  const plotContent = document.getElementById("plotCode").value; // Add this line
+  const plotContent = document.getElementById("plotCode").value;
   if (!quizdownContent.trim() || !jsContent.trim() || !cssContent.trim() || !plotContent.trim()) {
     alert("Please wait for resources to load or paste content before downloading.");
     return;
