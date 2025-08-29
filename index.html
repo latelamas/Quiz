@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quizdown to HTML Converter</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      background: #f4f4f9;
+      height: 100vh;
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin: 15px 0;
+      color: #333;
+    }
+
+    .editor-container {
+      display: flex;
+      flex-grow: 1;
+      padding: 0 15px 15px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      padding: 15px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 15px;
+      box-sizing: border-box;
+      resize: none;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      line-height: 1.5;
+    }
+
+    .button-container {
+      padding: 15px;
+      text-align: center;
+      background: #fff;
+      border-top: 1px solid #ddd;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    #cssCode, #jsCode {
+      display: none;
+    }
+
+    .question-number {
+      margin: 0;
+      font-weight: normal;
+    }
+
+    .question-title {
+      margin: 0.2em 0 1em 0;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Quizdown Converter</h2>
+  <div class="editor-container">
+    <textarea id="quizdownCode" placeholder="Paste your quiz content here, starting with a --- header..."></textarea>
+    <textarea id="cssCode"></textarea>
+    <textarea id="jsCode"></textarea>
+  </div>
+  <div class="button-container">
+    <button id="runBtn" onclick="runCode()" disabled>Generate Quiz</button>
+    <button id="downloadBtn" onclick="downloadCode()">Download HTML</button>
+  </div>
+
+  <script>
+    let newTab = null;
+
+    async function fetchResources() {
+      const runBtn = document.getElementById('runBtn');
+      runBtn.textContent = 'Loading Your Files...';
+      runBtn.disabled = true;
+
+      const cssDocId = "1Mi5cezG3ixAzuAgd5BUOC4ETqYK5izeapQZ3a1T-poI";
+      const jsDocId = "1rLqkOIGsuNlfKZAz85ZGCZhSKmXHdO6vI_p2FU7A0dE";
+
+      const fetchDoc = async (docId, textareaId) => {
+        try {
+          const res = await fetch(`https://docs.google.com/document/d/${docId}/export?format=txt`);
+          if (!res.ok) throw new Error(`Fetch failed for ${docId}: ${res.status}`);
+          document.getElementById(textareaId).value = await res.text();
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      await Promise.all([
+        fetchDoc(jsDocId, "jsCode"),
+        fetchDoc(cssDocId, "cssCode")
+      ]);
+
+      runBtn.textContent = 'Generate Quiz';
+      runBtn.disabled = false;
+    }
+
+    fetchResources();
+
+    // --- THE NEW MULTI-LINE AWARE PARSER ---
+    function parseQuizdown(text) {
+      text = text.replace(/\r\n/g, '\n');
+
+      let quizTitle = "Generated Quiz";
+      let shuffleOptions = true;
+      let questionText = text;
+
+      if (text.startsWith('---\n')) {
+        const endOfHeaderIndex = text.indexOf('\n---\n');
+        if (endOfHeaderIndex > 0) {
+          const headerText = text.substring(4, endOfHeaderIndex);
+          questionText = text.substring(endOfHeaderIndex + 5);
+
+          headerText.split('\n').forEach(line => {
+            const parts = line.split(':');
+            if (parts.length >= 2) {
+              const key = parts[0].trim();
+              const value = parts.slice(1).join(':').trim();
+              if (key === 'title') {
+                quizTitle = value;
+              }
+              if (key === 'shuffle') {
+                shuffleOptions = value.toLowerCase() === 'true' || value === '1';
+              }
+            }
+          });
+        }
+      }
+      function applyFormatting(str) {
+        if (!str) return '';
+        
+        console.log("Formatting input:", str); // Debug line - moved to beginning
+        
+        // Step 1: Protect all math (inline $…$ and block $$…$$)
+        const mathBlocks = [];
+        str = str.replace(/\$\$([\s\S]*?)\$\$/g, (match, p1) => {
+          const token = `@@MATH${mathBlocks.length}@@`;
+          mathBlocks.push({ token, content: `<div class="math-scroll">$$${p1}$$</div>` });
+          return token;
+        });
+        str = str.replace(/\$([^\$\n]+?)\$/g, (match, p1) => {
+          const token = `@@MATH${mathBlocks.length}@@`;
+          mathBlocks.push({ token, content: `$${p1}$` });
+          return token;
+        });
+      
+        // Step 2: Apply formatting
+        // Bold: **text**
+        str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Italic: _text_ (single underscore)
+        str = str.replace(/_([\s\S]+?)_/g, '<i>$1</i>');
+        // Step 3: Restore math blocks
+        mathBlocks.forEach(m => {
+          str = str.replace(m.token, m.content);
+        });
+        
+        console.log("Formatting output:", str); // Debug line
+        return str;
+      }
+
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      const questionBlocks = questionText.split(/\n---\n/).filter(block => block.trim() !== '');
+
+      const questionsHtml = questionBlocks.map((block, index) => {
+        try {
+          block = block.split('\n').filter(line => !line.trim().startsWith('//')).join('\n').trim();
+
+          const qNum = index + 1;
+          let materialsHtml = '';
+
+          block = block.replace(/\[(code|quote|table|material)(?::(\w+))?\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material)\]/g, (match, type, lang, content) => {
+            content = content.trim();
+            if (type === 'code') {
+              materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
+            } else if (type === 'quote') {
+              const parts = content.split('\n—');
+              materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
+            } else if (type === 'material') {  // This will now handle [material] blocks
+              materialsHtml += `<div class="material-box"><p class="content-text">${applyFormatting(content).replace(/\n\n/g, '</p><p class="content-text">')}</p></div>`;
+            } else if (type === 'table') {
+              const rows = content.split('\n').map(r => r.trim().slice(1, -1).split('|').map(c => c.trim()));
+              const header = rows[0]; const body = rows.slice(2);
+              const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+              materialsHtml += `<div class="material-box">${tableHtml}</div>`;
+            }
+            return '';
+          });
+
+          // --- Section-based parsing ---
+          const lines = block.trim().split('\n');
+          const questionLines = [];
+          const options = [];
+          const answerLines = [];
+          let currentSection = 'question';
+
+          for (const line of lines) {
+            if (line.startsWith('- [')) {
+              currentSection = 'options';
+              options.push({ correct: line.startsWith('- [x]'), text: applyFormatting(line.substring(5).trim()) });
+              continue;
+            }
+            if (line.startsWith('A:')) {
+              currentSection = 'answer';
+              answerLines.push(line.substring(2).trim());
+              continue;
+            }
+
+            if (currentSection === 'question') questionLines.push(line);
+            else if (currentSection === 'answer') answerLines.push(line);
+          }
+
+          // Handle Q: alone line
+          if (questionLines.length > 0 && questionLines[0].trim().startsWith('Q:')) {
+            const firstLineContent = questionLines[0].trim().substring(2).trim();
+            if (firstLineContent) questionLines[0] = firstLineContent;
+            else questionLines.shift();
+          }
+
+          const questionTitle = applyFormatting(questionLines.join('\n').trim());
+          const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
+
+          if (options.length > 0 && shuffleOptions) {
+            shuffleArray(options);
+          }
+
+          if (!questionTitle) return '';
+
+          const isMcq = options.length > 0;
+          const qId = `q${qNum}`;
+          let html = `<section class="question-block" id="${qId}" ${isMcq ? `data-correct-answer="${String.fromCharCode(97 + options.findIndex(opt => opt.correct))}"` : ''} aria-labelledby="${qId}-title">`;
+
+          // --- Fixed structure: question number and title as separate elements ---
+          html += `<p class="question-number" id="${qId}-number">${qNum}.</p>
+                   <p class="question-title" id="${qId}-title">${questionTitle}</p>`;
+
+          html += materialsHtml;
+
+          if (isMcq) {
+            html += '<fieldset><div class="options" role="radiogroup">';
+            options.forEach((opt, i) => {
+              const val = String.fromCharCode(97 + i);
+              html += `<label><input type="radio" name="${qId}" value="${val}"> ${opt.text}</label>`;
+            });
+            html += `</div></fieldset><button class="check-button" aria-controls="${qId}-feedback ${qId}-explanation">Check</button><div class="feedback" id="${qId}-feedback" role="alert" aria-live="polite"></div><div class="explanation" id="${qId}-explanation" aria-live="polite">${answer}</div>`;
+          } else {
+            if (answer) {
+              html += `<details><summary>Show/Hide</summary><div class="answer-box">${answer}</div></details>`;
+            }
+          }
+          html += '</section>';
+          return html;
+        } catch (e) {
+          console.error(`Error parsing question block #${index + 1}:`, e);
+          return `<section class="question-block error"><p class="question-title"><strong>${index + 1}.</strong> Error parsing this question.</p></section>`;
+        }
+      }).join('');
+
+      return {
+        title: quizTitle,
+        body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`
+      };
+    }
+
+    function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
+      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script><style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+    }
+
+    function runCode() {
+      const quizdownContent = document.getElementById("quizdownCode").value;
+      const cssContent = document.getElementById("cssCode").value;
+      const jsContent = document.getElementById("jsCode").value;
+      if (!quizdownContent.trim() || !jsContent.trim() || !cssContent.trim()) {
+        alert("Please wait for resources to load or paste quiz content.");
+        return;
+      }
+
+      const quizOutput = parseQuizdown(quizdownContent);
+      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+
+      if (!newTab || newTab.closed) newTab = window.open("", "_blank");
+      if (!newTab) {
+        alert("Popup blocked!");
+        return;
+      }
+      newTab.document.open();
+      newTab.document.write(fullHtml);
+      newTab.document.close();
+      newTab.focus();
+    }
+
+    function downloadCode() {
+      const quizdownContent = document.getElementById("quizdownCode").value;
+      const cssContent = document.getElementById("cssCode").value;
+      const jsContent = document.getElementById("jsCode").value;
+      if (!quizdownContent.trim() || !jsContent.trim() || !cssContent.trim()) {
+        alert("Please wait for resources to load or paste content before downloading.");
+        return;
+      }
+
+      const quizOutput = parseQuizdown(quizdownContent);
+      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+
+      const blob = new Blob([fullHtml], { type: "text/html" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "quiz.html";
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+  </script>
+
+</body>
+</html>
