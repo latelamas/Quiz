@@ -52,15 +52,14 @@ function parseQuizdown(text) {
           if (key === 'title') {
             quizTitle = value;
           }
-          // Removed shuffle option parsing - always true
         }
       });
     }
   }
-  
+
   function applyFormatting(str) {
     if (!str) return '';
-    
+
     // Step 1: Protect all math (inline $…$ and block $$…$$)
     const mathBlocks = [];
     str = str.replace(/\$\$([\s\S]*?)\$\$/g, (match, p1) => {
@@ -73,7 +72,7 @@ function parseQuizdown(text) {
       mathBlocks.push({ token, content: `$${p1}$` });
       return token;
     });
-  
+
     // Step 2: Apply formatting
     // Bold: **text**
     str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
@@ -83,7 +82,7 @@ function parseQuizdown(text) {
     mathBlocks.forEach(m => {
       str = str.replace(m.token, m.content);
     });
-    
+
     return str;
   }
 
@@ -107,7 +106,8 @@ function parseQuizdown(text) {
       block = block.replace(/\[(code|quote|table|material|plot)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/gs, (match, type, content) => {
         content = content.trim();
         if (type === 'code') {
-          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
+          // FIXED: Correctly escape HTML characters to prevent them from being rendered.
+          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
         } else if (type === 'quote') {
           const parts = content.split('\n—');
           materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
@@ -115,20 +115,21 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box"><p class="content-text">${applyFormatting(content).replace(/\n\n/g, '</p><p class="content-text">')}</p></div>`;
         } else if (type === 'table') {
           const rows = content.split('\n').map(r => r.trim().slice(1, -1).split('|').map(c => c.trim()));
-          const header = rows[0]; const body = rows.slice(2);
+          const header = rows[0];
+          const body = rows.slice(2);
           const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-          
+
           // Parse simplified plot syntax
           const lines = content.trim().split('\n');
           const functionsLine = lines[0] || 'x';
           const limitsLine = lines[1] || '-10,10';
-          
+
           const functions = functionsLine.split(',').map(f => f.trim());
           const [xMin, xMax] = limitsLine.split(',').map(Number);
-          
+
           // Generate plot config
           const plotConfig = {
             width: 500,
@@ -136,7 +137,8 @@ function parseQuizdown(text) {
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-             functions.map((fn, i) => {
+            // FIXED: Added the 'data' key for the functions array, which is required by function-plot.
+            data: functions.map((fn, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
               return {
                 fn: fn,
@@ -155,21 +157,17 @@ function parseQuizdown(text) {
                     config.target = '#${plotId}';
                     const plotInstance = functionPlot(config);
                     
-                    // Store original domains for reset
                     const originalXDomain = [...config.xAxis.domain];
                     const originalYDomain = [...config.yAxis.domain];
                     
-                    // Add double-click reset functionality
                     document.getElementById('${plotId}').addEventListener('dblclick', function(e) {
                       e.preventDefault();
                       const container = document.getElementById('${plotId}');
                       if (container) {
                         try {
-                          // Clear container
                           while (container.firstChild) {
                             container.removeChild(container.firstChild);
                           }
-                          // Re-render with original domains
                           const resetConfig = JSON.parse(JSON.stringify(config));
                           resetConfig.target = '#${plotId}';
                           resetConfig.xAxis.domain = [...originalXDomain];
@@ -214,7 +212,6 @@ function parseQuizdown(text) {
         else if (currentSection === 'answer') answerLines.push(line);
       }
 
-      // Handle Q: alone line
       if (questionLines.length > 0 && questionLines[0].trim().startsWith('Q:')) {
         const firstLineContent = questionLines[0].trim().substring(2).trim();
         if (firstLineContent) questionLines[0] = firstLineContent;
@@ -224,7 +221,7 @@ function parseQuizdown(text) {
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
 
-      if (options.length > 0) { // Always shuffle now
+      if (options.length > 0) {
         shuffleArray(options);
       }
 
@@ -234,7 +231,6 @@ function parseQuizdown(text) {
       const qId = `q${qNum}`;
       let html = `<section class="question-block" id="${qId}" ${isMcq ? `data-correct-answer="${String.fromCharCode(97 + options.findIndex(opt => opt.correct))}"` : ''} aria-labelledby="${qId}-title">`;
 
-      // --- Fixed structure: question number and title as separate elements ---
       html += `<p class="question-number" id="${qId}-number">${qNum}.</p>
                <p class="question-title" id="${qId}-title">${questionTitle}</p>`;
 
@@ -272,24 +268,38 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
     : '';
 
+  // FIXED: Made script tag escaping consistent for better practice.
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
-function runCode() {
+// --- REFACTORED LOGIC ---
+// Helper function to generate HTML, avoiding code duplication.
+function generateQuizHtml() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
   const jsContent = document.getElementById("jsCode").value;
+
   if (!quizdownContent.trim() || !jsContent.trim() || !cssContent.trim()) {
     alert("Please wait for resources to load or paste quiz content.");
-    return;
+    return null; // Return null if content is missing
   }
 
   const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+  return createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+}
 
-  if (!newTab || newTab.closed) newTab = window.open("", "_blank");
+
+function runCode() {
+  const fullHtml = generateQuizHtml();
+  if (!fullHtml) {
+    return; // Stop if HTML generation failed
+  }
+
+  if (!newTab || newTab.closed) {
+    newTab = window.open("", "_blank");
+  }
   if (!newTab) {
-    alert("Popup blocked!");
+    alert("Popup blocked! Please allow popups for this site.");
     return;
   }
   newTab.document.open();
@@ -299,21 +309,17 @@ function runCode() {
 }
 
 function downloadCode() {
-  const quizdownContent = document.getElementById("quizdownCode").value;
-  const cssContent = document.getElementById("cssCode").value;
-  const jsContent = document.getElementById("jsCode").value;
-  if (!quizdownContent.trim() || !jsContent.trim() || !cssContent.trim()) {
-    alert("Please wait for resources to load or paste content before downloading.");
-    return;
+  const fullHtml = generateQuizHtml();
+  if (!fullHtml) {
+    return; // Stop if HTML generation failed
   }
-
-  const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
 
   const blob = new Blob([fullHtml], { type: "text/html" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = "quiz.html";
+  document.body.appendChild(link); // Append to body to ensure it's clickable
   link.click();
+  document.body.removeChild(link); // Clean up
   URL.revokeObjectURL(link.href);
 }
