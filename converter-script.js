@@ -139,7 +139,9 @@ function parseQuizdown(text) {
             settingsMenu: false,
             lockViewport: true,
             zoomButtons: false,
-            expressionsCollapsed: false
+            expressionsCollapsed: false,
+            pointsOfInterest: false,
+            trace: false
           };
 
           const plotData = {
