@@ -139,19 +139,25 @@ function parseQuizdown(text) {
           const lines = content.trim().split('\n');
           
           const functionsLine = lines[0] || 'x';
-          const limitsLine = lines[1] || '-10,10'; // Default limits if line 2 is absent
+          const limitsLine = lines[1]; // Limits are now optional
           
-          const functions = functionsLine.split(',').map(f => f.trim());
-          const [xMin, xMax] = limitsLine.split(',').map(Number);
+          let xMin = -10, xMax = 10;
+          if (limitsLine) {
+            const parsedLimits = limitsLine.split(',').map(Number);
+            if (parsedLimits.length === 2 && !isNaN(parsedLimits[0]) && !isNaN(parsedLimits[1])) {
+              xMin = parsedLimits[0];
+              xMax = parsedLimits[1];
+            }
+          }
           
           const plotData = {
-              target: `#${plotId}`,
-              xMin: isNaN(xMin) ? -10 : xMin,
-              xMax: isNaN(xMax) ? 10 : xMax,
-              functions: functions
+              targetId: plotId,
+              xMin: xMin,
+              xMax: xMax,
+              functions: functionsLine.split(',').map(f => f.trim())
           };
 
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const xValues=(min,max,n=500)=>{const step=(max-min)/n;return Array.from({length:n+1},(_,i)=>min+i*step);};const data=[];const defaultColors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f'];const x=xValues(plotInfo.xMin,plotInfo.xMax);plotInfo.functions.forEach((fn,i)=>{const color=defaultColors[i%defaultColors.length];let yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});const JUMP_THRESHOLD=1000;for(let j=1;j<yValues.length;j++){if(yValues[j-1]!==null&&Math.abs(yValues[j]-yValues[j-1])>JUMP_THRESHOLD){yValues[j]=null;}}data.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});const layout={margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1},autosize:true};const config={displayModeBar:true,responsive:true};Plotly.newPlot(plotInfo.target.substring(1),data,layout,config);}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const plotDiv=document.getElementById(plotInfo.targetId);const defaultColors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f'];const calculateTraces=(min,max)=>{const n=500;const step=(max-min)/n;const x=Array.from({length:n+1},(_,i)=>min+i*step);const traces=[];plotInfo.functions.forEach((fn,i)=>{const color=defaultColors[i%defaultColors.length];let yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});const JUMP_THRESHOLD=Math.abs(max-min)*10;for(let j=1;j<yValues.length;j++){if(yValues[j-1]!==null&&yValues[j]!==null&&Math.abs(yValues[j]-yValues[j-1])>JUMP_THRESHOLD){yValues[j]=null;}}traces.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});return traces;};const initialTraces=calculateTraces(plotInfo.xMin,plotInfo.xMax);const layout={xaxis:{range:[plotInfo.xMin,plotInfo.xMax]},margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1},autosize:true};const config={displayModeBar:true,responsive:true};Plotly.newPlot(plotDiv,initialTraces,layout,config);plotDiv.on('plotly_relayout',(eventData)=>{if(eventData['xaxis.range[0]']){const newXMin=eventData['xaxis.range[0]'];const newXMax=eventData['xaxis.range[1]'];const newTraces=calculateTraces(newXMin,newXMax);Plotly.react(plotDiv,newTraces,layout);}});window.addEventListener('resize',()=>Plotly.Plots.resize(plotDiv));}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
         return '';
       });
