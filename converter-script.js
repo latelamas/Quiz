@@ -173,7 +173,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Plotly.js plotting system
+// Plotly.js plotting system - Minimal styling
 window.plotData = ${JSON.stringify(globalPlotData)};
 
 window.initPlots = function() {
@@ -186,10 +186,10 @@ window.initPlots = function() {
         const container = document.getElementById(plot.id);
         if (container) {
             try {
-                // Generate x values
+                // Generate x values with extended range to prevent cutting
                 const x = [];
                 const y = [];
-                for (let i = -10; i <= 10; i += 0.1) {
+                for (let i = -12; i <= 12; i += 0.1) {
                     x.push(i);
                     try {
                         // Simple function evaluation
@@ -222,7 +222,7 @@ window.initPlots = function() {
                     }
                 }
                 
-                // Create Plotly trace
+                // Create Plotly trace - minimal styling
                 const trace = {
                     x: x,
                     y: y,
@@ -230,50 +230,54 @@ window.initPlots = function() {
                     mode: 'lines',
                     line: {
                         color: '#2196f3',
-                        width: 3
+                        width: 2
                     },
-                    name: plot.latex
+                    name: plot.latex,
+                    hoverinfo: 'skip'
                 };
                 
-                // Layout configuration
+                // Minimal layout configuration
                 const layout = {
                     autosize: true,
                     margin: {
-                        l: 50,
+                        l: 40,
                         r: 20,
-                        b: 50,
-                        t: 30,
+                        b: 40,
+                        t: 20,
                         pad: 4
                     },
                     xaxis: {
-                        title: 'x',
                         showgrid: true,
                         gridcolor: '#eee',
+                        gridwidth: 1,
                         zeroline: true,
                         zerolinecolor: '#000',
-                        showline: true,
-                        linewidth: 2,
-                        linecolor: '#000'
+                        zerolinewidth: 1,
+                        showline: false,
+                        showticklabels: false,
+                        fixedrange: true
                     },
                     yaxis: {
-                        title: 'y',
                         showgrid: true,
                         gridcolor: '#eee',
+                        gridwidth: 1,
                         zeroline: true,
                         zerolinecolor: '#000',
-                        showline: true,
-                        linewidth: 2,
-                        linecolor: '#000'
+                        zerolinewidth: 1,
+                        showline: false,
+                        showticklabels: false,
+                        fixedrange: true
                     },
                     showlegend: false,
-                    hovermode: 'closest'
+                    hovermode: false,
+                    dragmode: false
                 };
                 
-                // Configuration options
+                // Minimal configuration options
                 const config = {
-                    displayModeBar: true,
+                    displayModeBar: false,
                     displaylogo: false,
-                    modeBarButtonsToRemove: ['lasso2d', 'select2d']
+                    staticPlot: true
                 };
                 
                 // Render the plot
@@ -330,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
             border: 1px solid #ddd;
             border-radius: 4px;
             margin: 10px 0;
-            background: #f8f9fa;
+            background: #fff;
         }
         .material-box {
             margin: 15px 0;
