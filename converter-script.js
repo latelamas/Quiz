@@ -138,9 +138,6 @@ function parseQuizdown(text) {
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           
-          const functionNames = ['f', 'g', 'h', 'p', 'q', 'r'];
-          let funcIndex = 0;
-          
           const expressions = content.split('\n')
             .map(f => f.trim())
             .filter(f => f) // Ensure empty lines are ignored
@@ -149,16 +146,6 @@ function parseQuizdown(text) {
               if (expr.startsWith('$') && expr.endsWith('$')) {
                   expr = expr.substring(1, expr.length - 1).trim();
               }
-              
-              // Check for advanced syntax
-              const isAdvanced = /[=\>\<\~\_]/.test(expr) || /^\(/.test(expr);
-
-              if (!isAdvanced) {
-                  const name = functionNames[funcIndex % functionNames.length];
-                  expr = `${name}(x)=${expr}`;
-                  funcIndex++;
-              }
-              
               return { id: `graph${i}`, latex: expr };
           });
 
