@@ -136,7 +136,7 @@ function parseQuizdown(text) {
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-            data: functions.map((fn, i) => {
+             functions.map((fn, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
               return {
                 fn: fn,
@@ -155,24 +155,26 @@ function parseQuizdown(text) {
                     config.target = '#${plotId}';
                     const plotInstance = functionPlot(config);
                     
-                    // Store config for reset
-                    window.plotConfigs = window.plotConfigs || {};
-                    window.plotConfigs['${plotId}'] = config;
+                    // Store original domains for reset
+                    const originalXDomain = [...config.xAxis.domain];
+                    const originalYDomain = [...config.yAxis.domain];
                     
                     // Add double-click reset functionality
                     document.getElementById('${plotId}').addEventListener('dblclick', function(e) {
                       e.preventDefault();
                       const container = document.getElementById('${plotId}');
-                      if (container && window.plotConfigs && window.plotConfigs['${plotId}']) {
+                      if (container) {
                         try {
                           // Clear container
                           while (container.firstChild) {
                             container.removeChild(container.firstChild);
                           }
-                          // Re-render with original config
-                          const originalConfig = JSON.parse(JSON.stringify(window.plotConfigs['${plotId}']));
-                          originalConfig.target = '#${plotId}';
-                          functionPlot(originalConfig);
+                          // Re-render with original domains
+                          const resetConfig = JSON.parse(JSON.stringify(config));
+                          resetConfig.target = '#${plotId}';
+                          resetConfig.xAxis.domain = [...originalXDomain];
+                          resetConfig.yAxis.domain = [...originalYDomain];
+                          functionPlot(resetConfig);
                         } catch (err) {
                           console.error("Reset failed:", err);
                         }
