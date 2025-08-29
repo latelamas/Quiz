@@ -1,4 +1,5 @@
 let newTab = null;
+let globalPlotData = []; // Global variable to store plot data
 
 // The main function to fetch the necessary resources for the *generated* quiz.
 async function fetchResources() {
@@ -30,6 +31,7 @@ fetchResources();
 
 function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
+  globalPlotData = []; // Reset plot data for each parse
 
   let quizTitle = "Generated Quiz";
   let questionText = text;
@@ -106,8 +108,7 @@ function parseQuizdown(text) {
             const escapedLatex = content.replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
             materialsHtml += `<div class="material-box"><div id="${plotId}" class="plot-container"></div></div>`;
             // Store plot data for later initialization
-            if (!window.plotData) window.plotData = [];
-            window.plotData.push({ id: plotId, latex: escapedLatex });
+            globalPlotData.push({ id: plotId, latex: escapedLatex });
         }
         return '';
       });
@@ -178,10 +179,10 @@ function parseQuizdown(text) {
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     // Add Desmos initialization script if there are plots
     let additionalScript = '';
-    if (window.plotData && window.plotData.length > 0) {
+    if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
 // Initialize Desmos plots
-window.plotData = ${JSON.stringify(window.plotData)};
+window.plotData = ${JSON.stringify(globalPlotData)};
 window.initPlots = function() {
     if (typeof Desmos === 'undefined') {
         console.error('Desmos API not loaded');
@@ -232,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
         script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6';
         script.onload = function() {
             setTimeout(function() {
-                if (window.initPlots) window.initPlots();
+                if (typeof window.initPlots === 'function') window.initPlots();
             }, 500);
         };
         script.onerror = function() {
@@ -250,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.head.appendChild(script);
     } else {
         setTimeout(function() {
-            if (window.initPlots) window.initPlots();
+            if (typeof window.initPlots === 'function') window.initPlots();
         }, 100);
     }
 });
