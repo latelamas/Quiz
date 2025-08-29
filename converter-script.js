@@ -148,8 +148,13 @@ function parseQuizdown(text) {
             yAxis: { domain: [-10, 10] },
             grid: true,
             data: functions.map((fn, i) => {
-              const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
-              return { fn: fn, color: colors[i % colors.length] };
+                const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
+                // Add closed: true to fill the area under the function's curve
+                return { 
+                    fn: fn, 
+                    color: colors[i % colors.length],
+                    closed: true 
+                };
             })
           };
           materialsHtml += `<div class="material-box"><div id="${plotId}" class="function-plot-container"></div><script>(function(){try{const config=${JSON.stringify(plotConfig)};config.target='#${plotId}';const plotInstance=functionPlot(config);const originalXDomain=[...config.xAxis.domain];const originalYDomain=[...config.yAxis.domain];document.getElementById('${plotId}').addEventListener('dblclick',function(e){e.preventDefault();const container=document.getElementById('${plotId}');if(container){try{while(container.firstChild){container.removeChild(container.firstChild)}const resetConfig=JSON.parse(JSON.stringify(config));resetConfig.target='#${plotId}';resetConfig.xAxis.domain=[...originalXDomain];resetConfig.yAxis.domain=[...originalYDomain];functionPlot(resetConfig)}catch(err){console.error("Reset failed:",err)}}})}catch(e){console.error("Plot config error:",e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>'}})();<\/script></div>`;
