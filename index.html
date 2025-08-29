@@ -3,23 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quizdown Converter</title>
-  <!-- Correctly link external CSS -->
+  <title>Quizdown to HTML Converter</title>
   <link rel="stylesheet" href="converter-styles.css">
 </head>
 <body>
+  <h2>Quizdown Converter</h2>
   <div class="editor-container">
-    <textarea id="quizdownCode" placeholder="Paste quizdown content here..."></textarea>
-    <textarea id="cssCode" placeholder="Optional CSS code..."></textarea>
-    <textarea id="jsCode" placeholder="Optional JS code..."></textarea>
+    <textarea id="quizdownCode" placeholder="Paste your quiz content here, starting with a --- header..."></textarea>
+    <textarea id="cssCode"></textarea>
+    <textarea id="jsCode"></textarea>
   </div>
-
-  <div class="buttons">
-    <button id="runBtn" onclick="runCode()" disabled>Generate</button>
-    <button onclick="downloadCode()">Download</button>
+  <div class="button-container">
+    <button id="runBtn" onclick="runCode()" disabled>Generate Quiz</button>
+    <button id="downloadBtn" onclick="downloadCode()">Download HTML</button>
   </div>
-
-  <!-- Correctly link external JS -->
   <script src="converter-script.js"></script>
 </body>
 </html>
