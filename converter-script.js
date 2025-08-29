@@ -173,7 +173,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Plotly.js plotting system - TRULY minimal and static
+// Plotly.js plotting system - With axis labels and grids
 window.plotData = ${JSON.stringify(globalPlotData)};
 
 window.initPlots = function() {
@@ -186,17 +186,16 @@ window.initPlots = function() {
         const container = document.getElementById(plot.id);
         if (container) {
             try {
-                // Generate x values with EXTENDED range to prevent cutting (-20 to 20)
+                // Generate x values with extended range
                 const x = [];
                 const y = [];
-                const step = 0.05; // Finer resolution
-                const generateRange = 20; // Generate from -20 to 20
-                const visibleRange = 10; // But only show -10 to 10
+                const step = 0.05;
+                const generateRange = 20;
+                const visibleRange = 10;
                 
                 for (let i = -generateRange; i <= generateRange; i += step) {
                     x.push(i);
                     try {
-                        // Function evaluation
                         let result;
                         const func = plot.latex.toLowerCase();
                         
@@ -207,7 +206,6 @@ window.initPlots = function() {
                         } else if (func.includes('cos')) {
                             result = Math.cos(i);
                         } else if (func.includes('tan')) {
-                            // Handle tan carefully
                             if (Math.abs(Math.cos(i)) < 0.01) {
                                 result = i > 0 ? 50 : -50;
                             } else {
@@ -218,18 +216,15 @@ window.initPlots = function() {
                         } else if (func.includes('sqrt')) {
                             result = i >= 0 ? Math.sqrt(i) : null;
                         } else if (func.includes('exp')) {
-                            // Limit exp to prevent overflow
                             if (i > 5) result = 100;
                             else if (i < -5) result = 0;
                             else result = Math.exp(i);
                         } else if (func.includes('log')) {
                             result = i > 0 ? Math.log(i) : null;
                         } else {
-                            // Linear function as default
                             result = i;
                         }
                         
-                        // Limit extreme values and handle nulls
                         if (result === null || result === undefined || !isFinite(result)) {
                             y.push(null);
                         } else {
@@ -243,7 +238,7 @@ window.initPlots = function() {
                     }
                 }
                 
-                // Filter data to visible range for cleaner plotting
+                // Filter data to visible range
                 const cleanX = [];
                 const cleanY = [];
                 for (let i = 0; i < x.length; i++) {
@@ -253,85 +248,93 @@ window.initPlots = function() {
                     }
                 }
                 
-                // Create Plotly trace - TRULY minimal
+                // Create Plotly trace
                 const trace = {
                     x: cleanX,
                     y: cleanY,
                     type: 'scatter',
                     mode: 'lines',
                     line: {
-                        color: '#666',
-                        width: 1
+                        color: '#2196f3',
+                        width: 2
                     },
                     hoverinfo: 'none'
                 };
                 
-                // TRULY minimal layout - NO INTERACTION
+                // Layout with axis labels and grids
                 const layout = {
                     autosize: true,
                     margin: {
-                        l: 25,
-                        r: 5,
-                        b: 25,
-                        t: 5,
-                        pad: 0
+                        l: 50,
+                        r: 20,
+                        b: 50,
+                        t: 20,
+                        pad: 4
                     },
                     xaxis: {
+                        title: 'x',
                         showgrid: true,
-                        gridcolor: '#f5f5f5',
+                        gridcolor: '#f0f0f0',
                         gridwidth: 1,
                         zeroline: true,
-                        zerolinecolor: '#eee',
+                        zerolinecolor: '#ddd',
                         zerolinewidth: 1,
-                        showline: false,
-                        showticklabels: false,
+                        showline: true,
+                        linecolor: '#333',
+                        linewidth: 1,
+                        showticklabels: true,
+                        tickfont: {
+                            size: 12,
+                            color: '#666'
+                        },
                         fixedrange: true,
-                        range: [-10, 10] // FIXED visible range
+                        range: [-10, 10]
                     },
                     yaxis: {
+                        title: 'y',
                         showgrid: true,
-                        gridcolor: '#f5f5f5',
+                        gridcolor: '#f0f0f0',
                         gridwidth: 1,
                         zeroline: true,
-                        zerolinecolor: '#eee',
+                        zerolinecolor: '#ddd',
                         zerolinewidth: 1,
-                        showline: false,
-                        showticklabels: false,
+                        showline: true,
+                        linecolor: '#333',
+                        linewidth: 1,
+                        showticklabels: true,
+                        tickfont: {
+                            size: 12,
+                            color: '#666'
+                        },
                         fixedrange: true,
-                        range: [-10, 10] // FIXED visible range
+                        range: [-10, 10]
                     },
                     showlegend: false,
                     hovermode: false,
                     dragmode: false,
-                    selectdirection: false,
                     plot_bgcolor: 'white',
                     paper_bgcolor: 'white'
                 };
                 
-                // TRULY static configuration - NO INTERACTION WHATSOEVER
+                // Configuration - still static but with labels
                 const config = {
                     displayModeBar: false,
                     displaylogo: false,
                     staticPlot: true,
                     editable: false,
                     scrollZoom: false,
-                    doubleClick: false,
-                    showTips: false,
-                    showAxisDragHandles: false,
-                    showAxisRangeEntryBoxes: false,
-                    showSendToCloud: false,
-                    sendData: false
+                    doubleClick: false
                 };
                 
-                // Render the plot - TRULY STATIC
+                // Render the plot
                 Plotly.newPlot(container, [trace], layout, config);
                 
-                // DISABLE ALL MOUSE EVENTS
+                // Keep it static
                 container.style.pointerEvents = 'none';
                 
             } catch (e) {
                 console.error('Error creating Plotly plot for ' + plot.id, e);
-                container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px; font-size: 12px;">Graph</p>';
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px; font-size: 14px;">Graph</p>';
             }
         }
     });
@@ -353,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.plotData.forEach(function(plot) {
                     const container = document.getElementById(plot.id);
                     if (container) {
-                        container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px; font-size: 12px;">Graph</p>';
+                        container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px; font-size: 14px;">Graph</p>';
                     }
                 });
             }
@@ -376,12 +379,11 @@ document.addEventListener('DOMContentLoaded', function() {
         <style>
         .plot-container {
             width: 100%;
-            height: 200px;
-            border: 1px solid #f0f0f0;
-            border-radius: 2px;
-            margin: 10px 0;
+            height: 300px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin: 15px 0;
             background: #fff;
-            /* DISABLE ALL POINTER EVENTS FOR TRUE STATIC */
             pointer-events: none;
         }
         .material-box {
