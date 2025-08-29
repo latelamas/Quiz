@@ -85,7 +85,7 @@ function parseQuizdown(text) {
       const qNum = index + 1;
       let materialsHtml = '';
 
-      block = block.replace(/\[(code|quote|table|material|plot)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/g, (match, type, attrs, content) => {
+      block = block.replace(/\[(code|quote|table|material|plot)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/gs, (match, type, attrs, content) => {
         content = content.trim();
         if (type === 'code') {
           materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
@@ -106,12 +106,18 @@ function parseQuizdown(text) {
             // Parse attributes for custom limits
             let limits = {};
             if (attrs) {
-                const rangeMatch = attrs.match(/range:\s*\[(-?\d+\.?\d*),\s*(-?\d+\.?\d*)\]/);
+                // Extract range: [min, max]
+                const rangeMatch = attrs.match(/range\s*:\s*$(.*?)$/);
                 if (rangeMatch) {
-                    limits.xMin = parseFloat(rangeMatch[1]);
-                    limits.xMax = parseFloat(rangeMatch[2]);
+                    const rangeValues = rangeMatch[1].split(',').map(v => parseFloat(v.trim()));
+                    if (rangeValues.length === 2 && !isNaN(rangeValues[0]) && !isNaN(rangeValues[1])) {
+                        limits.xMin = rangeValues[0];
+                        limits.xMax = rangeValues[1];
+                    }
                 }
-                const stepMatch = attrs.match(/step:\s*(\d+\.?\d*)/);
+                
+                // Extract step: value
+                const stepMatch = attrs.match(/step\s*:\s*([0-9.]+)/);
                 if (stepMatch) {
                     limits.step = parseFloat(stepMatch[1]);
                 }
