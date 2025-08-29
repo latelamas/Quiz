@@ -35,7 +35,7 @@ function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
 
   let quizTitle = "Generated Quiz";
-  let shuffleOptions = true; // Always true now
+  let shuffleOptions = true;
   let questionText = text;
 
   if (text.startsWith('---\n')) {
@@ -52,7 +52,9 @@ function parseQuizdown(text) {
           if (key === 'title') {
             quizTitle = value;
           }
-          // Removed shuffle option parsing - always true
+          if (key === 'shuffle') {
+            shuffleOptions = value.toLowerCase() === 'true' || value === '1';
+          }
         }
       });
     }
@@ -123,20 +125,14 @@ function parseQuizdown(text) {
           const plotConfig = content.trim();
 
           materialsHtml += `
-            <div class="material-box plot-container">
-              <div class="plot-wrapper">
-                <div id="${plotId}" class="function-plot-container"></div>
-              </div>
-              <div class="plot-controls">
-                <button class="reset-plot-btn" onclick="resetPlot('${plotId}', ${JSON.stringify(plotConfig)})">Reset View</button>
-              </div>
+            <div class="material-box">
+              <div id="${plotId}" class="function-plot-container"></div>
               <script>
                 (function(){
                   try {
                     const config = ${JSON.stringify(JSON.parse(plotConfig))};
                     config.target = '#${plotId}';
-                    window.plotInstances = window.plotInstances || {};
-                    window.plotInstances['${plotId}'] = functionPlot(config);
+                    functionPlot(config);
                   } catch (e) {
                     console.error("Plot config error:", e);
                     document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
@@ -181,7 +177,7 @@ function parseQuizdown(text) {
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
 
-      if (options.length > 0) { // Always shuffle now
+      if (options.length > 0 && shuffleOptions) {
         shuffleArray(options);
       }
 
@@ -223,99 +219,13 @@ function parseQuizdown(text) {
   };
 }
 
-// Global function for resetting plots
-window.resetPlot = function(plotId, originalConfig) {
-  try {
-    const container = document.getElementById(plotId);
-    if (container) {
-      // Clear the container
-      container.innerHTML = '';
-      // Re-render the plot with original config
-      const config = JSON.parse(originalConfig);
-      config.target = '#' + plotId;
-      window.plotInstances = window.plotInstances || {};
-      window.plotInstances[plotId] = functionPlot(config);
-    }
-  } catch (e) {
-    console.error("Error resetting plot:", e);
-  }
-};
-
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const hasPlots = quizBody.includes('class="function-plot-container"');
   const functionPlotScript = hasPlots
     ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
     : '';
 
-  // Add CSS for plot layout
-  const plotCss = hasPlots ? `
-    <style>
-      .plot-container {
-        display: flex;
-        align-items: flex-start;
-        gap: 15px;
-      }
-      .plot-wrapper {
-        flex: 1;
-      }
-      .plot-controls {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-start;
-        padding-top: 10px;
-      }
-      .reset-plot-btn {
-        padding: 8px 12px;
-        background: #007cba;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-      .reset-plot-btn:hover {
-        background: #005a87;
-      }
-      .function-plot-container {
-        min-width: 400px;
-        min-height: 300px;
-      }
-    </style>` : '';
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${quizTitle}</title>
-  <script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>
-  ${functionPlotScript}
-  ${plotCss}
-  <style>${cssContent}</style>
-</head>
-<body>
-  ${quizBody}
-  <script>
-    // Global plot reset function
-    window.resetPlot = function(plotId, originalConfig) {
-      try {
-        const container = document.getElementById(plotId);
-        if (container) {
-          container.innerHTML = '';
-          const config = JSON.parse(originalConfig);
-          config.target = '#' + plotId;
-          window.plotInstances = window.plotInstances || {};
-          window.plotInstances[plotId] = functionPlot(config);
-        }
-      } catch (e) {
-        console.error("Error resetting plot:", e);
-      }
-    };
-    ${jsContent}
-  <\/script>
-</body>
-</html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function runCode() {
