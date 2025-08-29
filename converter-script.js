@@ -139,10 +139,10 @@ function parseQuizdown(text) {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           const lines = content.trim().split('\n');
           
-          const functionsLine = lines[0] || 'x';
-          const limitsLine = lines[1]; // Limits are now optional
+          const functionsLine = lines[0] || 'y=x';
+          const limitsLine = lines[1];
           
-          let xMin = -10, xMax = 10;
+          let xMin = null, xMax = null;
           if (limitsLine) {
             const parsedLimits = limitsLine.split(',').map(Number);
             if (parsedLimits.length === 2 && !isNaN(parsedLimits[0]) && !isNaN(parsedLimits[1])) {
@@ -150,27 +150,22 @@ function parseQuizdown(text) {
               xMax = parsedLimits[1];
             }
           }
-          
+
+          const expressions = functionsLine.split(',').map((f, i) => {
+              let expr = f.trim();
+              if (!expr.includes('=') && !expr.includes('>') && !expr.includes('<')) {
+                  expr = `y=${expr}`;
+              }
+              return { id: `graph${i}`, latex: expr };
+          });
+
           const plotData = {
               targetId: plotId,
-              xMin: xMin,
-              xMax: xMax,
-              functions: functionsLine.split(',').map(f => f.trim())
+              expressions: expressions,
+              bounds: xMin !== null ? { left: xMin, right: xMax } : null
           };
-          
-          const sliderControls = `
-            <div class="plot-controls">
-              <div class="slider-group">
-                <label for="width-slider-${plotId}">Width:</label>
-                <input type="range" id="width-slider-${plotId}" min="300" max="1000" value="600" class="plot-slider">
-              </div>
-              <div class="slider-group">
-                <label for="height-slider-${plotId}">Height:</label>
-                <input type="range" id="height-slider-${plotId}" min="200" max="800" value="400" class="plot-slider">
-              </div>
-            </div>`;
 
-          materialsHtml += `<div class="material-box">${sliderControls}<div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const plotDiv=document.getElementById(plotInfo.targetId);const defaultColors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f'];const calculateTraces=(min,max)=>{const n=500;const step=(max-min)/n;const x=Array.from({length:n+1},(_,i)=>min+i*step);const traces=[];plotInfo.functions.forEach((fn,i)=>{const color=defaultColors[i%defaultColors.length];let yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});const JUMP_THRESHOLD=Math.abs(max-min)*10;for(let j=1;j<yValues.length;j++){if(yValues[j-1]!==null&&yValues[j]!==null&&Math.abs(yValues[j]-yValues[j-1])>JUMP_THRESHOLD){yValues[j]=null;}}traces.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});return traces;};const initialLayout={width:600,height:400,xaxis:{range:[plotInfo.xMin,plotInfo.xMax],autorange:false},yaxis:{range:[-10,10],scaleanchor:'x',scaleratio:1,autorange:false},dragmode:'pan',margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1},autosize:false};const config={displayModeBar:false,responsive:true,doubleClick:false};const initialTraces=calculateTraces(plotInfo.xMin,plotInfo.xMax);Plotly.newPlot(plotDiv,initialTraces,initialLayout,config);const widthSlider=document.getElementById('width-slider-'+plotInfo.targetId);const heightSlider=document.getElementById('height-slider-'+plotInfo.targetId);widthSlider.addEventListener('input',e=>{Plotly.relayout(plotDiv,{width:parseInt(e.target.value,10)});});heightSlider.addEventListener('input',e=>{Plotly.relayout(plotDiv,{height:parseInt(e.target.value,10)});});plotDiv.on('plotly_relayout',(eventData)=>{const currentLayout=plotDiv.layout;const newXMin=currentLayout.xaxis.range[0];const newXMax=currentLayout.xaxis.range[1];const newTraces=calculateTraces(newXMin,newXMax);Plotly.react(plotDiv,newTraces,currentLayout);});window.addEventListener('resize',()=>{Plotly.Plots.resize(plotDiv);});}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt);plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});if(plotInfo.bounds){calculator.setGraphpaperBounds(plotInfo.bounds);}}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
         return '';
       });
@@ -231,10 +226,9 @@ function parseQuizdown(text) {
 }
 
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
-  const hasPlots = quizBody.includes('class="plotly-container"');
-  // If plots exist, include math.js for evaluation and plotly.js for rendering.
+  const hasPlots = quizBody.includes('class="desmos-container"');
   const plotScripts = hasPlots
-    ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"><\/script><script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>`
+    ? `<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"><\/script>`
     : '';
   
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
