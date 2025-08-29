@@ -129,7 +129,7 @@
       let quizTitle = "Generated Quiz";
       let shuffleOptions = true;
       let questionText = text;
-      const plotlyScripts = [];
+      const plotObjects = []; // Store plot information
 
       if (text.startsWith('---\n')) {
         const endOfHeaderIndex = text.indexOf('\n---\n');
@@ -152,6 +152,7 @@
           });
         }
       }
+      
       function applyFormatting(str) {
         if (!str) return '';
         
@@ -194,11 +195,11 @@
           const qNum = index + 1;
           let materialsHtml = '';
 
-          // --- MODIFIED LINE: 'plotly' is changed to 'plot' in the regex ---
-          block = block.replace(/\[(code|quote|table|material|plot)(?::(\w+))?\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/g, (match, type, lang, content) => {
+          // Updated Regex to capture attributes in the [plot] tag
+          block = block.replace(/\[(code|quote|table|material|plot)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/g, (match, type, attrs, content) => {
             content = content.trim();
             if (type === 'code') {
-              materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
+              materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
             } else if (type === 'quote') {
               const parts = content.split('\n—');
               materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
@@ -209,11 +210,25 @@
               const header = rows[0]; const body = rows.slice(2);
               const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
               materialsHtml += `<div class="material-box">${tableHtml}</div>`;
-            // --- MODIFIED LINE: The condition now checks for 'plot' ---
             } else if (type === 'plot') {
-              const chartId = `plotly-chart-${qNum}-${plotlyScripts.length}`;
+              const chartId = `plot-chart-${qNum}-${plotObjects.length}`;
               materialsHtml += `<div class="material-box"><div id="${chartId}" style="width:100%;height:400px;"></div></div>`;
-              plotlyScripts.push({ id: chartId, code: content });
+              
+              const rangeMatch = attrs.match(/range\s*=\s*"([^"]*)"/);
+              let range = [-10, 10]; // Default range
+              if (rangeMatch && rangeMatch[1]) {
+                  const parsedRange = rangeMatch[1].split(',').map(Number);
+                  if(parsedRange.length === 2 && !parsedRange.some(isNaN)) {
+                      range = parsedRange;
+                  }
+              }
+              const functions = content.split('\n').map(f => f.trim()).filter(f => f);
+
+              plotObjects.push({ 
+                id: chartId, 
+                functions: functions, 
+                range: range
+              });
             }
             return '';
           });
@@ -287,36 +302,75 @@
       return {
         title: quizTitle,
         body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`,
-        plotlyScripts
+        plotObjects
       };
     }
 
-    function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotlyScripts) {
-      const plotlyScriptBlocks = plotlyScripts.map(script => `
-        try {
-          ${script.code.replace('PLOTLY_CHART_ID', script.id)}
-        } catch (e) {
-          console.error("Error executing Plotly script for ${script.id}:", e);
-          const el = document.getElementById("${script.id}");
-          if (el) el.innerHTML = "<p style='color:red;'>Error rendering chart.</p>";
-        }
-      `).join('\n');
+    function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects) {
+        return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title>
+            <script src="https://cdn.plot.ly/plotly-latest.min.js"><\/script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"><\/script>
+            <script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script>
+            <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script>
+            <style>${cssContent}</style>
+            </head>
+            <body>
+            ${quizBody}
+            <script>${jsContent}<\/script>
+            <script>
+            function renderMathPlots() {
+                const plotData = ${JSON.stringify(plotObjects)};
+                if (typeof Plotly === 'undefined' || typeof math === 'undefined') {
+                    console.log('Libraries not loaded yet, retrying...');
+                    setTimeout(renderMathPlots, 100);
+                    return;
+                }
+                
+                plotData.forEach(plot => {
+                    try {
+                        const traces = plot.functions.map(funcStr => {
+                            const node = math.parse(funcStr.replace(/^f\\(x\\)\\s*=\\s*/, ''));
+                            const compiled = node.compile();
+                            const xValues = [];
+                            const yValues = [];
+                            const step = (plot.range[1] - plot.range[0]) / 200; // 200 points for a smooth curve
 
-      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script src="https://cdn.plot.ly/plotly-latest.min.js"><\/script><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script><style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script><script>
-        function runPlotlyScripts() {
-          if (typeof Plotly === 'undefined') {
-            console.log('Plotly not loaded yet, retrying...');
-            setTimeout(runPlotlyScripts, 100);
-            return;
-          }
-          ${plotlyScriptBlocks}
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', runPlotlyScripts);
-        } else {
-            runPlotlyScripts();
-        }
-      <\/script></body></html>`;
+                            for (let x = plot.range[0]; x <= plot.range[1]; x += step) {
+                                xValues.push(x);
+                                yValues.push(compiled.evaluate({ x: x }));
+                            }
+                            return { x: xValues, y: yValues, type: 'scatter', mode: 'lines', name: funcStr };
+                        });
+
+                        const layout = { 
+                            title: 'Function Plot',
+                            xaxis: { title: 'x' },
+                            yaxis: { title: 'f(x)' },
+                            legend: {
+                              orientation: "h",
+                              yanchor: "bottom",
+                              y: 1.02,
+                              xanchor: "right",
+                              x: 1
+                            }
+                        };
+
+                        Plotly.newPlot(plot.id, traces, layout);
+                    } catch (e) {
+                        console.error("Error rendering plot for ID " + plot.id + ":", e);
+                        const el = document.getElementById(plot.id);
+                        if (el) el.innerHTML = "<p style='color:red;'>Error: Could not parse function. " + e.message + "</p>";
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', renderMathPlots);
+            } else {
+                renderMathPlots();
+            }
+            <\/script>
+            </body></html>`;
     }
 
     function runCode() {
@@ -329,7 +383,7 @@
       }
 
       const quizOutput = parseQuizdown(quizdownContent);
-      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotlyScripts);
+      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotObjects);
 
       if (!newTab || newTab.closed) newTab = window.open("", "_blank");
       if (!newTab) {
@@ -352,7 +406,7 @@
       }
 
       const quizOutput = parseQuizdown(quizdownContent);
-      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotlyScripts);
+      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotObjects);
 
       const blob = new Blob([fullHtml], { type: "text/html" });
       const link = document.createElement("a");
