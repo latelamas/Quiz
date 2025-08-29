@@ -208,23 +208,13 @@ window.initPlots = function() {
                 
                 calculator.setExpression({id: 'function', latex: plot.latex});
                 
-                // Set reasonable bounds based on function type
+                // Set reasonable bounds
                 calculator.setMathBounds({
                     left: -10,
                     right: 10,
                     bottom: -10,
                     top: 10
                 });
-                
-                // Add small delay to ensure proper rendering
-                setTimeout(function() {
-                    calculator.setMathBounds({
-                        left: -8,
-                        right: 8,
-                        bottom: -8,
-                        top: 8
-                    });
-                }, 100);
                 
             } catch (e) {
                 console.error('Error creating plot for ' + plot.id, e);
@@ -234,30 +224,36 @@ window.initPlots = function() {
     });
 };
 
-// Load Desmos API and initialize plots
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load Desmos API
+// Initialize plots when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Load Desmos API
+    if (typeof Desmos === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6';
         script.onload = function() {
-            // Small delay to ensure API is fully loaded
-            setTimeout(window.initPlots, 500);
+            setTimeout(function() {
+                if (window.initPlots) window.initPlots();
+            }, 500);
         };
         script.onerror = function() {
             console.error('Failed to load Desmos API');
+            // Show error in all plot containers
+            if (window.plotData) {
+                window.plotData.forEach(function(plot) {
+                    const container = document.getElementById(plot.id);
+                    if (container) {
+                        container.innerHTML = '<p style="color: red; text-align: center;">Graph service unavailable</p>';
+                    }
+                });
+            }
         };
         document.head.appendChild(script);
-    });
-} else {
-    // Load Desmos API
-    const script = document.createElement('script');
-    script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6';
-    script.onload = function() {
-        setTimeout(window.initPlots, 500);
-    };
-    document.head.appendChild(script);
-}
+    } else {
+        setTimeout(function() {
+            if (window.initPlots) window.initPlots();
+        }, 100);
+    }
+});
 `;
         additionalScript = `<script>${plotInitScript}<\/script>`;
     }
