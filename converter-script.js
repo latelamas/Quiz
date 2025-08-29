@@ -92,9 +92,19 @@ function parseQuizdown(text) {
         content = content.trim();
         if (type === 'code') {
           materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
-        } else if (type === 'quote' || type === 'material' || type === 'table') {
-          // Keep other blocks functional
-          // ... (logic for other blocks remains the same)
+        } else if (type === 'quote') {
+            // --- THIS LOGIC WAS MISSING ---
+            const parts = content.split('\n—');
+            materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
+        } else if (type === 'material') {
+            // --- THIS LOGIC WAS MISSING ---
+            materialsHtml += `<div class="material-box"><p class="content-text">${applyFormatting(content).replace(/\n\n/g, '</p><p class="content-text">')}</p></div>`;
+        } else if (type === 'table') {
+            // --- THIS LOGIC WAS MISSING ---
+            const rows = content.split('\n').map(r => r.trim().slice(1, -1).split('|').map(c => c.trim()));
+            const header = rows[0]; const body = rows.slice(2);
+            const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+            materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const canvasId = `plot-canvas-${qNum}-${plotObjects.length}`;
           materialsHtml += `<div class="material-box plot-container"><canvas id="${canvasId}" width="600" height="400"></canvas></div>`;
@@ -102,13 +112,15 @@ function parseQuizdown(text) {
           const getAttr = (name, defaultValue) => {
             const match = attrs.match(new RegExp(`${name}\\s*=\\s*"([^"]*)"`));
             if (!match || !match[1]) return defaultValue;
-            return match[1].split(',').map(Number);
+            const parsed = match[1].split(',').map(Number);
+            return parsed.length === 2 && !parsed.some(isNaN) ? parsed : defaultValue;
           };
           
           const getStepAttr = (name, defaultValue) => {
             const match = attrs.match(new RegExp(`${name}\\s*=\\s*"([^"]*)"`));
             if (!match || !match[1]) return defaultValue;
-            return Number(match[1]);
+            const parsed = Number(match[1]);
+            return isNaN(parsed) ? defaultValue : parsed;
           };
 
           plotObjects.push({
@@ -123,7 +135,6 @@ function parseQuizdown(text) {
         return '';
       });
       
-      // ... (rest of the parsing logic is unchanged)
       const lines = block.trim().split('\n');
       const questionLines = []; const options = []; const answerLines = [];
       let currentSection = 'question';
@@ -188,14 +199,17 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects)
             padding: 0;
             border: none;
             text-align: center; /* Center the canvas */
+            margin-top: 1em;
+            margin-bottom: 1em;
         }
         .plot-container canvas {
+            max-width: 100%;
+            height: auto;
             border: 1px solid #ccc;
         }
         ${cssContent}
     `;
 
-    // The exact plotting function you provided, ready to be injected.
     const plotFunctionCode = `
     function plotFunctionWithGrid(canvasId, func, xMin, xMax, yMin, yMax, xStep=1, yStep=1) {
         const canvas = document.getElementById(canvasId);
@@ -208,28 +222,24 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects)
         function yToCanvas(y) { return height - (y - yMin) / (yMax - yMin) * height; }
 
         ctx.clearRect(0, 0, width, height);
-
-        // Draw grid lines
         ctx.strokeStyle = '#ddd';
         ctx.lineWidth = 1;
         for (let x = Math.ceil(xMin/xStep)*xStep; x <= xMax; x += xStep) {
-            if (x === 0) continue; // Skip axis line
+            if (Math.abs(x - 0) < 0.001) continue;
             const cx = xToCanvas(x);
             ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, height); ctx.stroke();
         }
         for (let y = Math.ceil(yMin/yStep)*yStep; y <= yMax; y += yStep) {
-            if (y === 0) continue; // Skip axis line
+            if (Math.abs(y - 0) < 0.001) continue;
             const cy = yToCanvas(y);
             ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(width, cy); ctx.stroke();
         }
 
-        // Draw axes
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(0, yToCanvas(0)); ctx.lineTo(width, yToCanvas(0)); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(xToCanvas(0), 0); ctx.lineTo(xToCanvas(0), height); ctx.stroke();
 
-        // Draw axis ticks and labels
         ctx.fillStyle = '#000';
         ctx.font = '12px Arial';
         ctx.textAlign = 'center';
@@ -243,14 +253,15 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects)
             if (y !== 0) ctx.fillText(y, xToCanvas(0)-5, yToCanvas(y));
         }
 
-        // Plot function
         ctx.beginPath();
         ctx.strokeStyle = 'blue';
         ctx.lineWidth = 2;
         let first = true;
         for (let px = 0; px <= width; px++) {
             let x = xMin + px / width * (xMax - xMin);
-            let y = func(x);
+            let y;
+            try { y = func(x); } catch { continue; }
+            if (isNaN(y) || !isFinite(y)) continue;
             let py = yToCanvas(y);
             if (first) { ctx.moveTo(px, py); first = false; }
             else { ctx.lineTo(px, py); }
@@ -263,7 +274,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects)
         const plotData = ${JSON.stringify(plotObjects)};
         for (const plot of plotData) {
           try {
-            const func = new Function('x', 'return ' + plot.funcStr);
+            const func = new Function('x', 'with(Math) { return ' + plot.funcStr + '; }');
             plotFunctionWithGrid(
                 plot.id, func,
                 plot.xrange[0], plot.xrange[1],
