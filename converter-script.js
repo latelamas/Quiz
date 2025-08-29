@@ -173,7 +173,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Plotly.js plotting system - Wider containers
+// Plotly.js plotting system - Smart scaling with function-specific ranges
 window.plotData = ${JSON.stringify(globalPlotData)};
 
 window.initPlots = function() {
@@ -186,17 +186,34 @@ window.initPlots = function() {
         const container = document.getElementById(plot.id);
         if (container) {
             try {
+                // Determine function type for appropriate range
+                const func = plot.latex.toLowerCase();
+                let generateRange = 10;
+                let step = 0.1;
+                
+                // Function-specific range adjustments
+                if (func.includes('x^3') || func.includes('x**3')) {
+                    generateRange = 4; // Smaller range for cubic functions
+                    step = 0.05;
+                } else if (func.includes('exp')) {
+                    generateRange = 3; // Very small range for exponential
+                    step = 0.02;
+                } else if (func.includes('sin') || func.includes('cos')) {
+                    generateRange = 4 * Math.PI; // Multiple periods for trig functions
+                    step = 0.1;
+                } else if (func.includes('x^2') || func.includes('x**2')) {
+                    generateRange = 5; // Medium range for quadratics
+                    step = 0.1;
+                }
+                
                 // Generate x values
                 const x = [];
                 const y = [];
-                const step = 0.1;
-                const generateRange = 20;
                 
                 for (let i = -generateRange; i <= generateRange; i += step) {
                     x.push(i);
                     try {
                         let result;
-                        const func = plot.latex.toLowerCase();
                         
                         if (func.includes('x^2') || func.includes('x**2')) {
                             result = i * i;
@@ -215,8 +232,8 @@ window.initPlots = function() {
                         } else if (func.includes('sqrt')) {
                             result = i >= 0 ? Math.sqrt(i) : null;
                         } else if (func.includes('exp')) {
-                            if (i > 5) result = 100;
-                            else if (i < -5) result = 0;
+                            if (i > 3) result = 50;
+                            else if (i < -3) result = 0;
                             else result = Math.exp(i);
                         } else if (func.includes('log')) {
                             result = i > 0 ? Math.log(i) : null;
@@ -227,8 +244,9 @@ window.initPlots = function() {
                         if (result === null || result === undefined || !isFinite(result)) {
                             y.push(null);
                         } else {
-                            if (Math.abs(result) > 1000) {
-                                result = result > 0 ? 1000 : -1000;
+                            // Limit extreme values to prevent distortion
+                            if (Math.abs(result) > 100) {
+                                result = result > 0 ? 100 : -100;
                             }
                             y.push(result);
                         }
