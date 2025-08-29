@@ -173,13 +173,12 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// MathBox plotting system
+// Plotly.js plotting system
 window.plotData = ${JSON.stringify(globalPlotData)};
-window.mathboxInstances = {};
 
 window.initPlots = function() {
-    if (typeof MathBox === 'undefined') {
-        console.error('MathBox not loaded');
+    if (typeof Plotly === 'undefined') {
+        console.error('Plotly not loaded');
         return;
     }
     
@@ -187,139 +186,133 @@ window.initPlots = function() {
         const container = document.getElementById(plot.id);
         if (container) {
             try {
-                // Clear container
-                container.innerHTML = '';
-                container.style.width = '100%';
-                container.style.height = '300px';
-                container.style.position = 'relative';
-                
-                // Create MathBox instance
-                const mathbox = MathBox.mathBox({
-                    plugins: ['core', 'controls', 'cursor', 'mathbox'],
-                    controls: {
-                        klass: MathBox.Controls.Orbit,
-                        speed: 2,
-                        dampening: 0.95
-                    },
-                    camera: {
-                        fov: 20,
-                        position: [0, 0, 5]
-                    },
-                    container: container
-                });
-                
-                window.mathboxInstances[plot.id] = mathbox;
-                
-                const three = mathbox.three;
-                three.camera.up.set(0, 1, 0);
-                three.renderer.setClearColor(new THREE.Color(0xffffff), 1.0);
-                
-                // Create the scene
-                mathbox
-                    .cartesian({
-                        range: [[-10, 10], [-10, 10], [-10, 10]],
-                        scale: [2, 2, 1]
-                    })
-                    .axis({
-                        axis: 1,
-                        color: 0x000000,
-                        ticks: 10,
-                        lineWidth: 2,
-                        labels: true
-                    })
-                    .axis({
-                        axis: 2,
-                        color: 0x000000,
-                        ticks: 10,
-                        lineWidth: 2,
-                        labels: true
-                    })
-                    .grid({
-                        axes: [1, 2],
-                        color: 0xcccccc,
-                        lineWidth: 1
-                    });
-                
-                // Parse and plot function
-                const func = plot.latex;
-                let expr = func;
-                
-                // Simple function conversion (basic cases)
-                if (func.includes('sin')) {
-                    expr = func.replace(/\\sin/g, 'sin');
-                } else if (func.includes('cos')) {
-                    expr = func.replace(/\\cos/g, 'cos');
-                } else if (func.includes('tan')) {
-                    expr = func.replace(/\\tan/g, 'tan');
-                } else if (func.includes('^')) {
-                    expr = func.replace(/\^/g, '**');
+                // Generate x values
+                const x = [];
+                const y = [];
+                for (let i = -10; i <= 10; i += 0.1) {
+                    x.push(i);
+                    try {
+                        // Simple function evaluation
+                        let result;
+                        const func = plot.latex;
+                        
+                        if (func.includes('x^2') || func.includes('x**2')) {
+                            result = i * i;
+                        } else if (func.includes('sin')) {
+                            result = Math.sin(i);
+                        } else if (func.includes('cos')) {
+                            result = Math.cos(i);
+                        } else if (func.includes('tan')) {
+                            result = Math.tan(i);
+                        } else if (func.includes('x^3') || func.includes('x**3')) {
+                            result = i * i * i;
+                        } else if (func.includes('sqrt')) {
+                            result = i >= 0 ? Math.sqrt(i) : 0;
+                        } else if (func.includes('exp')) {
+                            result = Math.exp(i);
+                        } else if (func.includes('log')) {
+                            result = i > 0 ? Math.log(i) : 0;
+                        } else {
+                            // Linear function as default
+                            result = i;
+                        }
+                        y.push(result);
+                    } catch(e) {
+                        y.push(0);
+                    }
                 }
                 
-                mathbox
-                    .fn({
-                        expr: function(emit, x) {
-                            try {
-                                // Simple function evaluation
-                                let result;
-                                if (expr.includes('x**2')) {
-                                    result = x * x;
-                                } else if (expr.includes('sin')) {
-                                    result = Math.sin(x);
-                                } else if (expr.includes('cos')) {
-                                    result = Math.cos(x);
-                                } else if (expr.includes('x**3')) {
-                                    result = x * x * x;
-                                } else {
-                                    // Default linear
-                                    result = x;
-                                }
-                                emit(x, result);
-                            } catch(e) {
-                                emit(x, 0);
-                            }
-                        },
-                        domain: [-10, 10],
-                        samples: 200,
-                        color: 0x2196f3,
-                        lineWidth: 3
-                    });
+                // Create Plotly trace
+                const trace = {
+                    x: x,
+                    y: y,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: {
+                        color: '#2196f3',
+                        width: 3
+                    },
+                    name: plot.latex
+                };
+                
+                // Layout configuration
+                const layout = {
+                    autosize: true,
+                    margin: {
+                        l: 50,
+                        r: 20,
+                        b: 50,
+                        t: 30,
+                        pad: 4
+                    },
+                    xaxis: {
+                        title: 'x',
+                        showgrid: true,
+                        gridcolor: '#eee',
+                        zeroline: true,
+                        zerolinecolor: '#000',
+                        showline: true,
+                        linewidth: 2,
+                        linecolor: '#000'
+                    },
+                    yaxis: {
+                        title: 'y',
+                        showgrid: true,
+                        gridcolor: '#eee',
+                        zeroline: true,
+                        zerolinecolor: '#000',
+                        showline: true,
+                        linewidth: 2,
+                        linecolor: '#000'
+                    },
+                    showlegend: false,
+                    hovermode: 'closest'
+                };
+                
+                // Configuration options
+                const config = {
+                    displayModeBar: true,
+                    displaylogo: false,
+                    modeBarButtonsToRemove: ['lasso2d', 'select2d']
+                };
+                
+                // Render the plot
+                Plotly.newPlot(container, [trace], layout, config);
                 
             } catch (e) {
-                console.error('Error creating MathBox plot for ' + plot.id, e);
-                container.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error loading 3D graph: ' + e.message + '</p>';
+                console.error('Error creating Plotly plot for ' + plot.id, e);
+                container.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error loading graph: ' + e.message + '</p>';
             }
         }
     });
 };
 
-// Load MathBox and dependencies
+// Load Plotly.js
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof MathBox === 'undefined') {
-        // Load THREE.js first
-        const threeScript = document.createElement('script');
-        threeScript.src = 'https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js';
-        threeScript.onload = function() {
-            // Then load MathBox
-            const mathboxScript = document.createElement('script');
-            mathboxScript.src = 'https://cdn.jsdelivr.net/npm/mathbox@2.1.1/build/mathbox.js';
-            mathboxScript.onload = function() {
-                // Load MathBox CSS
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = 'https://cdn.jsdelivr.net/npm/mathbox@2.1.1/build/mathbox.css';
-                document.head.appendChild(link);
-                
-                setTimeout(function() {
-                    if (typeof window.initPlots === 'function') window.initPlots();
-                }, 500);
-            };
-            document.head.appendChild(mathboxScript);
+    if (typeof Plotly === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.plot.ly/plotly-2.24.1.min.js';
+        script.onload = function() {
+            setTimeout(function() {
+                if (typeof window.initPlots === 'function') window.initPlots();
+            }, 100);
         };
-        document.head.appendChild(threeScript);
+        script.onerror = function() {
+            console.error('Failed to load Plotly.js');
+            if (window.plotData) {
+                window.plotData.forEach(function(plot) {
+                    const container = document.getElementById(plot.id);
+                    if (container) {
+                        container.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Graph service unavailable</p>';
+                    }
+                });
+            }
+        };
+        document.head.appendChild(script);
     } else {
         setTimeout(function() {
             if (typeof window.initPlots === 'function') window.initPlots();
-        }, 100);
+        }, 10);
     }
 });
 `;
