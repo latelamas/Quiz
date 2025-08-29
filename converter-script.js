@@ -107,7 +107,7 @@ function parseQuizdown(text) {
       block = block.replace(/\[(code|quote|table|material|plot)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/gs, (match, type, content) => {
         content = content.trim();
         if (type === 'code') {
-          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
+          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
         } else if (type === 'quote') {
           const parts = content.split('\n—');
           materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
@@ -129,14 +129,14 @@ function parseQuizdown(text) {
           const functions = functionsLine.split(',').map(f => f.trim());
           const [xMin, xMax] = limitsLine.split(',').map(Number);
           
-          // Generate plot config
+          // --- FIX: The `data:` key was missing here, which caused a syntax error ---
           const plotConfig = {
             width: 500,
             height: 300,
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-             functions.map((fn, i) => {
+            data: functions.map((fn, i) => { // Added `data:` key
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
               return {
                 fn: fn,
@@ -155,7 +155,7 @@ function parseQuizdown(text) {
                     config.target = '#${plotId}';
                     const plotInstance = functionPlot(config);
                     
-                    // --- FIX: Disable the default double-click zoom ---
+                    // Disable the default double-click zoom
                     plotInstance.getPlottable().on('dblclick.zoom', null);
           
                     // Add double-click reset functionality
