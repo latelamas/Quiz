@@ -17,7 +17,6 @@ async function fetchResources() {
     }
   };
 
-  // --- MODIFIED: Now looks for 'script.js' and 'styles.css' ---
   await Promise.all([
     fetchFile('./script.js', "jsCode"),
     fetchFile('./styles.css', "cssCode")
@@ -27,7 +26,6 @@ async function fetchResources() {
   runBtn.disabled = false;
 }
 
-// Run the fetch operation as soon as the script loads.
 fetchResources();
 
 
@@ -37,8 +35,7 @@ function parseQuizdown(text) {
   let quizTitle = "Generated Quiz";
   let shuffleOptions = true;
   let questionText = text;
-  const plotObjects = [];
-  const geogebraObjects = [];
+  const desmosObjects = []; // The only interactive element we now support
 
   if (text.startsWith('---\n')) {
     const endOfHeaderIndex = text.indexOf('\n---\n');
@@ -90,11 +87,11 @@ function parseQuizdown(text) {
   const questionsHtml = questionBlocks.map((block, index) => {
     try {
       block = block.split('\n').filter(line => !line.trim().startsWith('//')).join('\n').trim();
-
       const qNum = index + 1;
       let materialsHtml = '';
 
-      block = block.replace(/\[(code|quote|table|material|plot|geogebra)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot|geogebra)\]/g, (match, type, attrs, content) => {
+      // --- SIMPLIFIED REGEX: Only looks for desmos and other core blocks ---
+      block = block.replace(/\[(code|quote|table|material|desmos)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|desmos)\]/g, (match, type, attrs, content) => {
         content = content.trim();
         if (type === 'code') {
           materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
@@ -108,35 +105,25 @@ function parseQuizdown(text) {
           const header = rows[0]; const body = rows.slice(2);
           const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
-        } else if (type === 'plot') {
-          const chartId = `plot-chart-${qNum}-${plotObjects.length}`;
-          materialsHtml += `<div class="material-box"><div id="${chartId}" style="width:100%;height:400px;"></div></div>`;
-          const rangeMatch = attrs.match(/range\s*=\s*"([^"]*)"/);
-          let range = [-10, 10];
-          if (rangeMatch && rangeMatch[1]) {
-              const parsedRange = rangeMatch[1].split(',').map(Number);
-              if(parsedRange.length === 2 && !parsedRange.some(isNaN)) { range = parsedRange; }
-          }
-          const functions = content.split('\n').map(f => f.trim()).filter(f => f);
-          plotObjects.push({ id: chartId, functions: functions, range: range });
-        } else if (type === 'geogebra') {
+        } else if (type === 'desmos') {
+          // --- NEW: Desmos iframe logic ---
           const idMatch = attrs.match(/id\s*=\s*"([^"]*)"/);
           if (idMatch && idMatch[1]) {
-            const materialId = idMatch[1];
-            const containerId = `geogebra-container-${qNum}-${geogebraObjects.length}`;
-            materialsHtml += `<div class="material-box"><div id="${containerId}" class="geogebra-container"></div></div>`;
-            geogebraObjects.push({ containerId: containerId, materialId: materialId });
+            const graphId = idMatch[1];
+            // Directly insert the iframe. No complex JS needed for the final page.
+            materialsHtml += `<div class="material-box desmos-container">
+              <iframe src="https://www.desmos.com/calculator/${graphId}?embed" width="100%" height="100%" style="border: 1px solid #ccc;" frameborder="0"></iframe>
+            </div>`;
           } else {
-            materialsHtml += `<div class="material-box error-box"><p style="color:red;">Error: GeoGebra block requires a valid 'id' attribute, like [geogebra id="..."]</p></div>`;
+            materialsHtml += `<div class="material-box error-box"><p style="color:red;">Error: Desmos block requires a valid 'id' attribute, like [desmos id="..."]</p></div>`;
           }
         }
         return '';
       });
 
+      // (The rest of the parsing logic is unchanged)
       const lines = block.trim().split('\n');
-      const questionLines = [];
-      const options = [];
-      const answerLines = [];
+      const questionLines = []; const options = []; const answerLines = [];
       let currentSection = 'question';
       for (const line of lines) {
         if (line.startsWith('- [')) {
@@ -154,8 +141,7 @@ function parseQuizdown(text) {
       }
       if (questionLines.length > 0 && questionLines[0].trim().startsWith('Q:')) {
         const firstLineContent = questionLines[0].trim().substring(2).trim();
-        if (firstLineContent) questionLines[0] = firstLineContent;
-        else questionLines.shift();
+        if (firstLineContent) questionLines[0] = firstLineContent; else questionLines.shift();
       }
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
@@ -189,25 +175,23 @@ function parseQuizdown(text) {
   return {
     title: quizTitle,
     body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`,
-    plotObjects,
-    geogebraObjects
   };
 }
 
-function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects, geogebraObjects) {
+// --- SIMPLIFIED: No longer needs plot or geogebra objects ---
+function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     const finalCss = `
-        .geogebra-container {
+        .desmos-container {
             width: 100%;
-            aspect-ratio: 16 / 10;
-            border: 1px solid #ccc;
+            height: 500px; /* A fixed height is more reliable for iframes */
+            padding: 0;
+            border: none;
         }
         ${cssContent}
     `;
 
+    // --- SIMPLIFIED: No more complex rendering scripts ---
     return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title>
-        <script src="https://cdn.plot.ly/plotly-latest.min.js"><\/script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"><\/script>
-        <script src="https://www.geogebra.org/apps/deployggb.js"><\/script>
         <script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script>
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script>
         <style>${finalCss}</style>
@@ -215,50 +199,6 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects,
         <body>
         ${quizBody}
         <script>${jsContent}<\/script>
-        <script>
-        function renderAllInteractiveContent() {
-            const plotData = ${JSON.stringify(plotObjects)};
-            if (typeof Plotly !== 'undefined' && typeof math !== 'undefined') {
-                const funcRegex = new RegExp('^f\\\\(x\\\\)\\\\s*=\\\\s*');
-                plotData.forEach(plot => {
-                    try {
-                        const traces = plot.functions.map(funcStr => {
-                            const cleanFuncStr = funcStr.replace(funcRegex, '');
-                            const compiled = math.parse(cleanFuncStr).compile();
-                            const xValues = Array.from({length: 201}, (_, i) => plot.range[0] + i * (plot.range[1] - plot.range[0]) / 200);
-                            const yValues = xValues.map(x => { try { return compiled.evaluate({x}); } catch { return null; } });
-                            return { x: xValues, y: yValues, type: 'scatter', mode: 'lines', name: funcStr };
-                        });
-                        const layout = { title: 'Function Plot', xaxis: { title: 'x' }, yaxis: { title: 'f(x)' }, legend: { orientation: "h", yanchor: "bottom", y: 1.02, xanchor: "right", x: 1 }};
-                        Plotly.newPlot(plot.id, traces, layout);
-                    } catch (e) {
-                        console.error("Error rendering plot for ID " + plot.id + ":", e);
-                        const el = document.getElementById(plot.id);
-                        if (el) el.innerHTML = "<p style='color:red;'>Error: Could not parse function. " + e.message + "</p>";
-                    }
-                });
-            }
-
-            const appletData = ${JSON.stringify(geogebraObjects)};
-            if (typeof GGBApplet !== 'undefined') {
-                appletData.forEach(obj => {
-                    // --- MODIFIED: Using the cleaner initialization method you suggested ---
-                    const params = {
-                        "appName": "classic",
-                        "material_id": obj.materialId, // Correct parameter name
-                        "showToolBar": true,
-                        "showAlgebraInput": true,
-                        "showMenuBar": false,
-                        "showResetIcon": true,
-                        "scaleContainerClass": "geogebra-container"
-                    };
-                    const applet = new GGBApplet(params, true);
-                    applet.inject(obj.containerId);
-                });
-            }
-        }
-        window.onload = renderAllInteractiveContent;
-        <\/script>
         </body></html>`;
 }
 
@@ -271,7 +211,7 @@ function runCode() {
     return;
   }
   const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotObjects, quizOutput.geogebraObjects);
+  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
 
   if (!newTab || newTab.closed) newTab = window.open("", "_blank");
   if (!newTab) { alert("Popup blocked!"); return; }
@@ -290,7 +230,7 @@ function downloadCode() {
     return;
   }
   const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotObjects, quizOutput.geogebraObjects);
+  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
 
   const blob = new Blob([fullHtml], { type: "text/html" });
   const link = document.createElement("a");
