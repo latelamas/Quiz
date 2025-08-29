@@ -134,6 +134,7 @@ function parseQuizdown(text) {
             expressions.push({ id: 'graph0', latex: 'y=x' });
           }
 
+          // These options create a fully locked-down, static plot
           const calculatorOptions = {
             keypad: false,
             settingsMenu: false,
@@ -150,7 +151,9 @@ function parseQuizdown(text) {
               options: calculatorOptions
           };
 
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt, plotInfo.options || {});plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          // --- FINAL, CORRECTED SCRIPT ---
+          // This script now uses your suggestion to set each expression as readonly.
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt,plotInfo.options||{});plotInfo.expressions.forEach(expr=>{calculator.setExpression(Object.assign(expr,{readonly:true}));});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
         return '';
       });
@@ -210,27 +213,14 @@ function parseQuizdown(text) {
   return { title: quizTitle, body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>` };
 }
 
+// The redundant CSS has been removed from this function for a cleaner approach.
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const hasPlots = quizBody.includes('class="desmos-container"');
   const plotScripts = hasPlots
     ? `<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"><\/script>`
     : '';
-
-  const desmosReadOnlyStyle = `
-    .desmos-container .dcg-expression-mathquill-container {
-        pointer-events: none !important;
-    }
-    .desmos-container .dcg-expression-icon-container {
-        pointer-events: none !important;
-    }
-    .desmos-container .dcg-add-expression-container,
-    .desmos-container .dcg-add-item-container,
-    .desmos-container .dcg-edit-list-mode-toggle {
-        display: none !important;
-    }
-  `;
   
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent} ${hasPlots ? desmosReadOnlyStyle : ''}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function generateQuizHtml() {
