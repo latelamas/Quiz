@@ -84,11 +84,11 @@ function parseQuizdown(text) {
       const qNum = index + 1;
       let materialsHtml = '';
 
-      // --- REGEX MODIFIED: All plotting functionality has been removed ---
-      block = block.replace(/\[(code|quote|table|material)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material)\]/g, (match, type, attrs, content) => {
+      // --- REGEX MODIFIED: Added plot functionality ---
+      block = block.replace(/\[(code|quote|table|material|plot)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/g, (match, type, attrs, content) => {
         content = content.trim();
         if (type === 'code') {
-          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
+          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
         } else if (type === 'quote') {
             const parts = content.split('\n—');
             materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
@@ -99,6 +99,15 @@ function parseQuizdown(text) {
             const header = rows[0]; const body = rows.slice(2);
             const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
             materialsHtml += `<div class="material-box">${tableHtml}</div>`;
+        } else if (type === 'plot') {
+            // Generate unique ID for each plot
+            const plotId = `plot-${qNum}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            // Escape LaTeX for JavaScript string
+            const escapedLatex = content.replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
+            materialsHtml += `<div class="material-box"><div id="${plotId}" class="plot-container"></div></div>`;
+            // Store plot data for later initialization
+            if (!window.plotData) window.plotData = [];
+            window.plotData.push({ id: plotId, latex: escapedLatex });
         }
         return '';
       });
@@ -165,15 +174,114 @@ function parseQuizdown(text) {
   };
 }
 
-// --- FUNCTION MODIFIED: Simplified to its core purpose. No plotting logic. ---
+// --- FUNCTION MODIFIED: Added Desmos initialization for plots ---
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
+    // Add Desmos initialization script if there are plots
+    let additionalScript = '';
+    if (window.plotData && window.plotData.length > 0) {
+        const plotInitScript = `
+// Initialize Desmos plots
+window.plotData = ${JSON.stringify(window.plotData)};
+window.initPlots = function() {
+    if (typeof Desmos === 'undefined') {
+        console.error('Desmos API not loaded');
+        return;
+    }
+    
+    window.plotData.forEach(function(plot) {
+        const container = document.getElementById(plot.id);
+        if (container) {
+            // Clear any existing content
+            container.innerHTML = '';
+            container.style.width = '100%';
+            container.style.height = '300px';
+            
+            try {
+                const calculator = Desmos.GraphingCalculator(container, {
+                    keypad: false,
+                    expressions: false,
+                    settingsMenu: false,
+                    zoomButtons: false,
+                    expressionsTopbar: false,
+                    border: false
+                });
+                
+                calculator.setExpression({id: 'function', latex: plot.latex});
+                
+                // Set reasonable bounds based on function type
+                calculator.setMathBounds({
+                    left: -10,
+                    right: 10,
+                    bottom: -10,
+                    top: 10
+                });
+                
+                // Add small delay to ensure proper rendering
+                setTimeout(function() {
+                    calculator.setMathBounds({
+                        left: -8,
+                        right: 8,
+                        bottom: -8,
+                        top: 8
+                    });
+                }, 100);
+                
+            } catch (e) {
+                console.error('Error creating plot for ' + plot.id, e);
+                container.innerHTML = '<p style="color: red; text-align: center;">Error loading graph</p>';
+            }
+        }
+    });
+};
+
+// Load Desmos API and initialize plots
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load Desmos API
+        const script = document.createElement('script');
+        script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6';
+        script.onload = function() {
+            // Small delay to ensure API is fully loaded
+            setTimeout(window.initPlots, 500);
+        };
+        script.onerror = function() {
+            console.error('Failed to load Desmos API');
+        };
+        document.head.appendChild(script);
+    });
+} else {
+    // Load Desmos API
+    const script = document.createElement('script');
+    script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6';
+    script.onload = function() {
+        setTimeout(window.initPlots, 500);
+    };
+    document.head.appendChild(script);
+}
+`;
+        additionalScript = `<script>${plotInitScript}<\/script>`;
+    }
+
     return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title>
         <script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script>
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script>
         <style>${cssContent}</style>
+        <style>
+        .plot-container {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .material-box {
+            margin: 15px 0;
+        }
+        </style>
         </head>
         <body>
         ${quizBody}
+        ${additionalScript}
         <script>${jsContent}<\/script>
         </body></html>`;
 }
