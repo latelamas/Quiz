@@ -221,8 +221,12 @@ function parseQuizdown(text) {
 
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const hasPlots = quizBody.includes('class="function-plot-container"');
-  const functionPlotScript = hasPlots ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>` : '';
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  // If plots exist, include math.js first, then function-plot.js
+  const plotScripts = hasPlots
+    ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
+    : '';
+  
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function generateQuizHtml() {
@@ -248,7 +252,7 @@ function runCode() {
   newTab.document.open();
   newTab.document.write(fullHtml);
   newTab.document.close();
-  newTab.document.focus();
+  newTab.focus();
 }
 
 function downloadCode() {
