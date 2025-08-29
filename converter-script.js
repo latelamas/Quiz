@@ -136,7 +136,7 @@ function parseQuizdown(text) {
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-            functions: functions.map((fn, i) => {
+             functions.map((fn, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
               return {
                 fn: fn,
@@ -153,7 +153,33 @@ function parseQuizdown(text) {
                   try {
                     const config = ${JSON.stringify(plotConfig)};
                     config.target = '#${plotId}';
-                    functionPlot(config);
+                    const plotInstance = functionPlot(config);
+                    
+                    // Store original domains for reset
+                    const originalXDomain = [...config.xAxis.domain];
+                    const originalYDomain = [...config.yAxis.domain];
+                    
+                    // Add double-click reset functionality
+                    document.getElementById('${plotId}').addEventListener('dblclick', function(e) {
+                      e.preventDefault();
+                      const container = document.getElementById('${plotId}');
+                      if (container) {
+                        try {
+                          // Clear container
+                          while (container.firstChild) {
+                            container.removeChild(container.firstChild);
+                          }
+                          // Re-render with original domains
+                          const resetConfig = JSON.parse(JSON.stringify(config));
+                          resetConfig.target = '#${plotId}';
+                          resetConfig.xAxis.domain = [...originalXDomain];
+                          resetConfig.yAxis.domain = [...originalYDomain];
+                          functionPlot(resetConfig);
+                        } catch (err) {
+                          console.error("Reset failed:", err);
+                        }
+                      }
+                    });
                   } catch (e) {
                     console.error("Plot config error:", e);
                     document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
@@ -243,10 +269,10 @@ function parseQuizdown(text) {
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const hasPlots = quizBody.includes('class="function-plot-container"');
   const functionPlotScript = hasPlots
-    ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js    "><\/script>`
+    ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
     : '';
 
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js    "><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function runCode() {
@@ -291,3 +317,4 @@ function downloadCode() {
   link.click();
   URL.revokeObjectURL(link.href);
 }
+currently when i double click a graph it just zooms in
