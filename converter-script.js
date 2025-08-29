@@ -106,7 +106,7 @@ function parseQuizdown(text) {
       const qNum = index + 1;
       let materialsHtml = '';
 
-      block = block.replace(/\[(code|quote|table|material)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material)\]/gs, (match, type, content) => {
+      block = block.replace(/\[(code|quote|table|material|plot)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/gs, (match, type, content) => {
         content = content.trim();
         if (type === 'code') {
           materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
@@ -120,6 +120,26 @@ function parseQuizdown(text) {
           const header = rows[0]; const body = rows.slice(2);
           const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
+        } else if (type === 'plot') {
+          const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          const plotConfig = content.trim();
+
+          materialsHtml += `
+            <div class="material-box">
+              <div id="${plotId}" class="function-plot-container"></div>
+              <script>
+                (function(){
+                  try {
+                    const config = ${JSON.stringify(JSON.parse(plotConfig))};
+                    config.target = '#${plotId}';
+                    functionPlot(config);
+                  } catch (e) {
+                    console.error("Plot config error:", e);
+                    document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
+                  }
+                })();
+              <\/script>
+            </div>`;
         }
         return '';
       });
@@ -200,7 +220,12 @@ function parseQuizdown(text) {
 }
 
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script><style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  const hasPlots = quizBody.includes('class="function-plot-container"');
+  const functionPlotScript = hasPlots
+    ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
+    : '';
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function runCode() {
