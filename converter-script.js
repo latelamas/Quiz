@@ -35,7 +35,7 @@ function parseQuizdown(text) {
   let quizTitle = "Generated Quiz";
   let shuffleOptions = true;
   let questionText = text;
-  const desmosObjects = []; // The only interactive element we now support
+  const chartObjects = []; // NEW: Array for Chart.js objects
 
   if (text.startsWith('---\n')) {
     const endOfHeaderIndex = text.indexOf('\n---\n');
@@ -90,8 +90,8 @@ function parseQuizdown(text) {
       const qNum = index + 1;
       let materialsHtml = '';
 
-      // --- SIMPLIFIED REGEX: Only looks for desmos and other core blocks ---
-      block = block.replace(/\[(code|quote|table|material|desmos)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|desmos)\]/g, (match, type, attrs, content) => {
+      // --- REWRITTEN REGEX: Looks for 'chart' and other core blocks ---
+      block = block.replace(/\[(code|quote|table|material|chart)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|chart)\]/g, (match, type, attrs, content) => {
         content = content.trim();
         if (type === 'code') {
           materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
@@ -105,23 +105,19 @@ function parseQuizdown(text) {
           const header = rows[0]; const body = rows.slice(2);
           const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
-        } else if (type === 'desmos') {
-          // --- NEW: Desmos iframe logic ---
-          const idMatch = attrs.match(/id\s*=\s*"([^"]*)"/);
-          if (idMatch && idMatch[1]) {
-            const graphId = idMatch[1];
-            // Directly insert the iframe. No complex JS needed for the final page.
-            materialsHtml += `<div class="material-box desmos-container">
-              <iframe src="https://www.desmos.com/calculator/${graphId}?embed" width="100%" height="100%" style="border: 1px solid #ccc;" frameborder="0"></iframe>
-            </div>`;
-          } else {
-            materialsHtml += `<div class="material-box error-box"><p style="color:red;">Error: Desmos block requires a valid 'id' attribute, like [desmos id="..."]</p></div>`;
-          }
+        } else if (type === 'chart') {
+          // --- NEW: Chart.js block logic ---
+          const canvasId = `chartjs-${qNum}-${chartObjects.length}`;
+          // The container helps manage size and responsiveness.
+          materialsHtml += `<div class="material-box chart-container"><canvas id="${canvasId}"></canvas></div>`;
+          chartObjects.push({
+            id: canvasId,
+            config: content // The raw JSON string
+          });
         }
         return '';
       });
 
-      // (The rest of the parsing logic is unchanged)
       const lines = block.trim().split('\n');
       const questionLines = []; const options = []; const answerLines = [];
       let currentSection = 'question';
@@ -175,23 +171,45 @@ function parseQuizdown(text) {
   return {
     title: quizTitle,
     body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`,
+    chartObjects
   };
 }
 
-// --- SIMPLIFIED: No longer needs plot or geogebra objects ---
-function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
+function createFullHtml(quizTitle, quizBody, cssContent, jsContent, chartObjects) {
     const finalCss = `
-        .desmos-container {
-            width: 100%;
-            height: 500px; /* A fixed height is more reliable for iframes */
-            padding: 0;
-            border: none;
+        .chart-container {
+            position: relative;
+            height: 40vh;
+            width: 80vw;
+            max-width: 600px;
+            margin: auto;
+            padding: 1rem;
         }
         ${cssContent}
     `;
 
-    // --- SIMPLIFIED: No more complex rendering scripts ---
+    // --- NEW: Script to render Chart.js charts ---
+    const chartRendererScript = `
+      function renderCharts() {
+        const chartData = ${JSON.stringify(chartObjects)};
+        for (const chart of chartData) {
+          const ctx = document.getElementById(chart.id);
+          if (ctx) {
+            try {
+              const config = JSON.parse(chart.config);
+              new Chart(ctx, config);
+            } catch (e) {
+              console.error("Failed to parse Chart.js JSON for chart #" + chart.id, e);
+              ctx.parentElement.innerHTML = '<p style="color:red;">Error: Invalid JSON for chart configuration.</p>';
+            }
+          }
+        }
+      }
+      window.addEventListener('load', renderCharts);
+    `;
+
     return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
         <script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script>
         <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script>
         <style>${finalCss}</style>
@@ -199,6 +217,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
         <body>
         ${quizBody}
         <script>${jsContent}<\/script>
+        <script>${chartRendererScript}<\/script>
         </body></html>`;
 }
 
@@ -211,7 +230,7 @@ function runCode() {
     return;
   }
   const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.chartObjects);
 
   if (!newTab || newTab.closed) newTab = window.open("", "_blank");
   if (!newTab) { alert("Popup blocked!"); return; }
@@ -230,7 +249,7 @@ function downloadCode() {
     return;
   }
   const quizOutput = parseQuizdown(quizdownContent);
-  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+  const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.chartObjects);
 
   const blob = new Blob([fullHtml], { type: "text/html" });
   const link = document.createElement("a");
