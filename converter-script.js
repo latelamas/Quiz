@@ -138,24 +138,24 @@ function parseQuizdown(text) {
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           
-          const functionsLine = content.trim() || 'x';
-          
-          const functionNames = ['f', 'g', 'h', 'p', 'q', 'r'];
-          const expressions = functionsLine.split(',').map((f, i) => {
-              let expr = f.trim();
-
+          const expressions = content.split('\n')
+            .map(f => f.trim())
+            .filter(f => f) // Ensure empty lines are ignored
+            .map((f, i) => {
+              let expr = f;
               // Handle LaTeX delimiters
               if (expr.startsWith('$') && expr.endsWith('$')) {
                   expr = expr.substring(1, expr.length - 1).trim();
               }
-
-              // Prepend function name if it's a simple expression
-              if (!expr.includes('=') && !expr.includes('>') && !expr.includes('<')) {
-                  const name = functionNames[i % functionNames.length];
-                  expr = `${name}(x)=${expr}`;
-              }
+              // NOTE: The logic to auto-add f(x)= has been removed.
+              // Desmos is smart enough to handle `sin(x)` as `y=sin(x)`.
+              // This allows users to write `f(x)={...}` on multiple lines correctly.
               return { id: `graph${i}`, latex: expr };
           });
+
+          if (expressions.length === 0) {
+            expressions.push({ id: 'graph0', latex: 'y=x' }); // Default graph
+          }
 
           const plotData = {
               targetId: plotId,
