@@ -153,16 +153,24 @@ function parseQuizdown(text) {
             expressions.push({ id: 'graph0', latex: 'y=x' }); // Default graph
           }
 
+          // --- UPDATED SECTION START ---
+          const calculatorOptions = {
+            keypad: false,
+            expressions: false,
+            settingsMenu: false,
+            lockViewport: true,
+            zoomButtons: false,
+            expressionsCollapsed: true
+          };
+
           const plotData = {
               targetId: plotId,
-              expressions: expressions
+              expressions: expressions,
+              options: calculatorOptions
           };
-          
-          const calculator = Desmos.GraphingCalculator(elt, {
-            expressions: false,
-          });
 
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt);plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt, plotInfo.options || {});plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          // --- UPDATED SECTION END ---
         }
         return '';
       });
