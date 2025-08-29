@@ -13,14 +13,14 @@ async function fetchResources() {
       document.getElementById(textareaId).value = await res.text();
     } catch (e) {
       console.error(e);
-      alert(`Failed to load a required file: ${filePath}. Please ensure quiz-script.js and quiz-styles.css are in the same folder.`);
+      alert(`Failed to load a required file: ${filePath}. Please ensure script.js and styles.css are in the same folder.`);
     }
   };
 
   // Note: These paths point to the files for the generated quiz, not the converter itself.
   await Promise.all([
-    fetchFile('./quiz-script.js', "jsCode"),
-    fetchFile('./quiz-styles.css', "cssCode")
+    fetchFile('./script.js', "jsCode"),
+    fetchFile('./styles.css', "cssCode")
   ]);
 
   runBtn.textContent = 'Generate Quiz';
