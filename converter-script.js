@@ -137,8 +137,9 @@ function parseQuizdown(text) {
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           const lines = content.trim().split('\n');
+          
           const functionsLine = lines[0] || 'x';
-          const limitsLine = lines[1] || '-10,10';
+          const limitsLine = lines[1] || '-10,10'; // Default limits if line 2 is absent
           
           const functions = functionsLine.split(',').map(f => f.trim());
           const [xMin, xMax] = limitsLine.split(',').map(Number);
@@ -150,7 +151,7 @@ function parseQuizdown(text) {
               functions: functions
           };
 
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const xValues=(min,max,n=500)=>{const step=(max-min)/n;return Array.from({length:n+1},(_,i)=>min+i*step);};const data=[];const defaultColors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f'];const x=xValues(plotInfo.xMin,plotInfo.xMax);plotInfo.functions.forEach((fnStr,i)=>{const parts=fnStr.split(':').map(p=>p.trim());const fn=parts[0];const color=parts.length>1?parts[1]:defaultColors[i%defaultColors.length];let yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});const JUMP_THRESHOLD=1000;for(let j=1;j<yValues.length;j++){if(yValues[j-1]!==null&&Math.abs(yValues[j]-yValues[j-1])>JUMP_THRESHOLD){yValues[j]=null;}}data.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});const layout={margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1},autosize:true};const config={displayModeBar:true,responsive:true};Plotly.newPlot(plotInfo.target.substring(1),data,layout,config);}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const xValues=(min,max,n=500)=>{const step=(max-min)/n;return Array.from({length:n+1},(_,i)=>min+i*step);};const data=[];const defaultColors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f'];const x=xValues(plotInfo.xMin,plotInfo.xMax);plotInfo.functions.forEach((fn,i)=>{const color=defaultColors[i%defaultColors.length];let yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});const JUMP_THRESHOLD=1000;for(let j=1;j<yValues.length;j++){if(yValues[j-1]!==null&&Math.abs(yValues[j]-yValues[j-1])>JUMP_THRESHOLD){yValues[j]=null;}}data.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});const layout={margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1},autosize:true};const config={displayModeBar:true,responsive:true};Plotly.newPlot(plotInfo.target.substring(1),data,layout,config);}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
         return '';
       });
