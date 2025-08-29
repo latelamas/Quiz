@@ -123,13 +123,13 @@
 
     fetchResources();
 
-    // --- THE NEW MULTI-LINE AWARE PARSER ---
     function parseQuizdown(text) {
       text = text.replace(/\r\n/g, '\n');
 
       let quizTitle = "Generated Quiz";
       let shuffleOptions = true;
       let questionText = text;
+      const plotlyScripts = [];
 
       if (text.startsWith('---\n')) {
         const endOfHeaderIndex = text.indexOf('\n---\n');
@@ -155,7 +155,6 @@
       function applyFormatting(str) {
         if (!str) return '';
         
-        // Step 1: Protect all math (inline $…$ and block $$…$$)
         const mathBlocks = [];
         str = str.replace(/\$\$([\s\S]*?)\$\$/g, (match, p1) => {
           const token = `@@MATH${mathBlocks.length}@@`;
@@ -168,12 +167,8 @@
           return token;
         });
       
-        // Step 2: Apply formatting
-        // Bold: **text**
         str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        // Italic: _text_ (single underscore)
         str = str.replace(/_([\s\S]+?)_/g, '<i>$1</i>');
-        // Step 3: Restore math blocks
         mathBlocks.forEach(m => {
           str = str.replace(m.token, m.content);
         });
@@ -199,25 +194,30 @@
           const qNum = index + 1;
           let materialsHtml = '';
 
-          block = block.replace(/\[(code|quote|table|material)(?::(\w+))?\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material)\]/g, (match, type, lang, content) => {
+          // --- MODIFIED LINE: 'plotly' is changed to 'plot' in the regex ---
+          block = block.replace(/\[(code|quote|table|material|plot)(?::(\w+))?\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/g, (match, type, lang, content) => {
             content = content.trim();
             if (type === 'code') {
               materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
             } else if (type === 'quote') {
               const parts = content.split('\n—');
               materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
-            } else if (type === 'material') {  // This will now handle [material] blocks
+            } else if (type === 'material') {
               materialsHtml += `<div class="material-box"><p class="content-text">${applyFormatting(content).replace(/\n\n/g, '</p><p class="content-text">')}</p></div>`;
             } else if (type === 'table') {
               const rows = content.split('\n').map(r => r.trim().slice(1, -1).split('|').map(c => c.trim()));
               const header = rows[0]; const body = rows.slice(2);
               const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
               materialsHtml += `<div class="material-box">${tableHtml}</div>`;
+            // --- MODIFIED LINE: The condition now checks for 'plot' ---
+            } else if (type === 'plot') {
+              const chartId = `plotly-chart-${qNum}-${plotlyScripts.length}`;
+              materialsHtml += `<div class="material-box"><div id="${chartId}" style="width:100%;height:400px;"></div></div>`;
+              plotlyScripts.push({ id: chartId, code: content });
             }
             return '';
           });
 
-          // --- Section-based parsing ---
           const lines = block.trim().split('\n');
           const questionLines = [];
           const options = [];
@@ -240,7 +240,6 @@
             else if (currentSection === 'answer') answerLines.push(line);
           }
 
-          // Handle Q: alone line
           if (questionLines.length > 0 && questionLines[0].trim().startsWith('Q:')) {
             const firstLineContent = questionLines[0].trim().substring(2).trim();
             if (firstLineContent) questionLines[0] = firstLineContent;
@@ -260,7 +259,6 @@
           const qId = `q${qNum}`;
           let html = `<section class="question-block" id="${qId}" ${isMcq ? `data-correct-answer="${String.fromCharCode(97 + options.findIndex(opt => opt.correct))}"` : ''} aria-labelledby="${qId}-title">`;
 
-          // --- Fixed structure: question number and title as separate elements ---
           html += `<p class="question-number" id="${qId}-number">${qNum}.</p>
                    <p class="question-title" id="${qId}-title">${questionTitle}</p>`;
 
@@ -288,12 +286,37 @@
 
       return {
         title: quizTitle,
-        body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`
+        body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`,
+        plotlyScripts
       };
     }
 
-    function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
-      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script><style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+    function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotlyScripts) {
+      const plotlyScriptBlocks = plotlyScripts.map(script => `
+        try {
+          ${script.code.replace('PLOTLY_CHART_ID', script.id)}
+        } catch (e) {
+          console.error("Error executing Plotly script for ${script.id}:", e);
+          const el = document.getElementById("${script.id}");
+          if (el) el.innerHTML = "<p style='color:red;'>Error rendering chart.</p>";
+        }
+      `).join('\n');
+
+      return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script src="https://cdn.plot.ly/plotly-latest.min.js"><\/script><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer><\/script><style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script><script>
+        function runPlotlyScripts() {
+          if (typeof Plotly === 'undefined') {
+            console.log('Plotly not loaded yet, retrying...');
+            setTimeout(runPlotlyScripts, 100);
+            return;
+          }
+          ${plotlyScriptBlocks}
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runPlotlyScripts);
+        } else {
+            runPlotlyScripts();
+        }
+      <\/script></body></html>`;
     }
 
     function runCode() {
@@ -306,7 +329,7 @@
       }
 
       const quizOutput = parseQuizdown(quizdownContent);
-      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotlyScripts);
 
       if (!newTab || newTab.closed) newTab = window.open("", "_blank");
       if (!newTab) {
@@ -329,7 +352,7 @@
       }
 
       const quizOutput = parseQuizdown(quizdownContent);
-      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
+      const fullHtml = createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent, quizOutput.plotlyScripts);
 
       const blob = new Blob([fullHtml], { type: "text/html" });
       const link = document.createElement("a");
