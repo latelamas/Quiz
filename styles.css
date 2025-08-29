@@ -61,7 +61,7 @@ h1 {
 }
 
 .plot-container {
-  width: 80%;
+  width: 100%;
   height: 300px;
   border: 1px solid #dee2e6;
   border-radius: 8px;
