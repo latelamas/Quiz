@@ -7,7 +7,8 @@
     style.textContent = `
       .tex-raw-inline { display:inline; white-space:pre-wrap; word-break:break-word; cursor:default; }
       .tex-raw-block { display:block; white-space:pre-wrap; word-break:break-word; cursor:default; margin:0.5em 0; }
-      .question-title > :first-child { cursor: pointer; user-select: none; }
+      .question-number { cursor: pointer; user-select: none; font-weight: bold; color: #184e77; font-size: 1.2em; display: inline-block; margin-right: 8px; }
+      .question-title { user-select: text; }
     `;
     document.head.appendChild(style);
   }
@@ -90,10 +91,11 @@
   function findClickedQuestionNumberElement(path) {
     for (const el of path) {
       if (!el || el.nodeType !== 1) continue;
-      const qTitle = el.closest && el.closest('.question-title');
-      if (!qTitle) continue;
-      const firstElChild = qTitle.firstElementChild;
-      if (firstElChild && firstElChild === el) return el.closest('.question-block');
+      // Check if we clicked on the question number
+      const qNumber = el.closest && el.closest('.question-number');
+      if (qNumber) {
+        return el.closest('.question-block');
+      }
     }
     return null;
   }
@@ -102,17 +104,12 @@
     window.addEventListener('click', (ev) => {
       try {
         const path = ev.composedPath ? ev.composedPath() : [];
-
-        // If click happened on any MathJax element, block it entirely
         if (path.some(el => el && el.tagName && el.tagName.toLowerCase() === 'mjx-container')) {
           ev.stopPropagation();
           ev.preventDefault();
           return;
         }
-
-        // ignore clicks on interactive elements
         if (path.some(isInteractiveEl)) return;
-
         const qBlock = findClickedQuestionNumberElement(path);
         if (qBlock) {
           const hasRendered = qBlock.querySelector('[data-tex]') !== null;
@@ -128,14 +125,11 @@
   }
 
   function disableClickOnMath() {
-    // Disables left-click on all existing and future MathJax nodes
     function disableNode(el) {
       if (!el) return;
       el.addEventListener('click', e => e.preventDefault(), { capture: true });
     }
-
     document.querySelectorAll('mjx-container').forEach(disableNode);
-
     const obs = new MutationObserver(muts => {
       for (const m of muts) {
         for (const n of m.addedNodes) {
@@ -148,10 +142,38 @@
     obs.observe(document.documentElement, { childList: true, subtree: true });
   }
   
+  function processBackticks() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const nodesToProcess = [];
+    while (walker.nextNode()) {
+      if (walker.currentNode.nodeValue.includes('`')) {
+        nodesToProcess.push(walker.currentNode);
+      }
+    }
+    nodesToProcess.forEach(node => {
+      if (node.parentElement.closest('pre, code')) {
+        return;
+      }
+      const parts = node.nodeValue.split(/(`[^`]+`)/g);
+      if (parts.length <= 1) return;
+      const fragment = document.createDocumentFragment();
+      parts.forEach(part => {
+        if (part.startsWith('`') && part.endsWith('`')) {
+          const span = document.createElement('span');
+          span.textContent = part.slice(1, -1);
+          span.className = 'backtick';
+          fragment.appendChild(span);
+        } else {
+          fragment.appendChild(document.createTextNode(part));
+        }
+      });
+      node.parentNode.replaceChild(fragment, node);
+    });
+  }
+
   function init() {
     installQuestionNumberClickHandler();
     disableClickOnMath();
-
     if (window.MathJax?.startup?.promise) {
       MathJax.startup.promise.then(() => annotateAllMathWithTex()).catch(() => annotateAllMathWithTex());
     } else {
@@ -161,14 +183,11 @@
         else annotateAllMathWithTex();
       });
     }
-
     const obs = new MutationObserver((muts) => {
       if (muts.some(m => m.addedNodes && m.addedNodes.length)) setTimeout(annotateAllMathWithTex, 0);
     });
     obs.observe(document.documentElement, { childList: true, subtree: true });
   }
-
-  init();
 
   // Quiz logic
   function wireQuiz() {
@@ -178,14 +197,12 @@
         const feedback = qBlock.querySelector('.feedback');
         const explanation = qBlock.querySelector('.explanation');
         const selected = qBlock.querySelector(`input[name="${qBlock.id}"]:checked`);
-
         if (!selected) {
           feedback.textContent = "Please select an answer.";
           feedback.className = "feedback incorrect";
           explanation.style.display = 'none';
           return;
         }
-
         if (selected.value === qBlock.dataset.correctAnswer) {
           feedback.textContent = "✓";
           feedback.className = "feedback correct";
@@ -199,9 +216,16 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', wireQuiz);
-  } else {
+  // --- INITIALIZATION ---
+  function initializePage() {
+    init();
     wireQuiz();
+    processBackticks();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+  } else {
+    initializePage();
   }
 })();
