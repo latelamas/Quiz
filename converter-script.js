@@ -134,7 +134,6 @@ function parseQuizdown(text) {
             expressions.push({ id: 'graph0', latex: 'y=x' });
           }
 
-          // These options create a fully locked-down, static plot
           const calculatorOptions = {
             keypad: false,
             settingsMenu: false,
@@ -151,9 +150,51 @@ function parseQuizdown(text) {
               options: calculatorOptions
           };
 
-          // --- FINAL, CORRECTED SCRIPT ---
-          // This script now uses your suggestion to set each expression as readonly.
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt,plotInfo.options||{});plotInfo.expressions.forEach(expr=>{calculator.setExpression(Object.assign(expr,{readonly:true}));});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          // --- START OF PATCHED SECTION ---
+          // This is the complete, robust script that prevents adding new expressions.
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{
+            const plotInfo = ${JSON.stringify(plotData)};
+            const elt = document.getElementById(plotInfo.targetId);
+            if (!elt) return;
+
+            const calculator = Desmos.GraphingCalculator(elt, plotInfo.options || {});
+
+            (plotInfo.expressions || []).forEach(expr => {
+              calculator.setExpression(Object.assign({}, expr, { readonly: true }));
+            });
+
+            const allowed = new Set(calculator.getExpressions().map(e => e.id));
+
+            calculator.observeEvent('change', (eventName, event) => {
+              if (!event.isUserInitiated) return;
+              try {
+                const current = calculator.getExpressions();
+                current.forEach(e => {
+                  if (!allowed.has(e.id)) {
+                    calculator.removeExpression({ id: e.id });
+                    console.warn('Removed user-added expression', e.id);
+                  }
+                });
+              } catch (err) {
+                console.error('Error enforcing read-only expressions:', err);
+              }
+            });
+
+            const keyHandler = (ev) => {
+              if (!elt.contains(document.activeElement)) return;
+              if ((ev.ctrlKey || ev.metaKey) && ev.altKey && (ev.code === 'KeyX' || ev.key === 'x')) {
+                ev.preventDefault();
+                ev.stopPropagation();
+              }
+            };
+            window.addEventListener('keydown', keyHandler, true);
+
+          }catch(e){
+            console.error('Desmos error:',e);
+            document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';
+          }})();<\/script></div>`;
+          // --- END OF PATCHED SECTION ---
+
         }
         return '';
       });
@@ -213,7 +254,6 @@ function parseQuizdown(text) {
   return { title: quizTitle, body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>` };
 }
 
-// The redundant CSS has been removed from this function for a cleaner approach.
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const hasPlots = quizBody.includes('class="desmos-container"');
   const plotScripts = hasPlots
