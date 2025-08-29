@@ -1,0 +1,81 @@
+---
+id: concise-robust-quiz-01
+type: quiz
+title: Concise & Robust Quiz Template
+---
+
+Q: 
+Calculate $EVA = \text{NOPAT} - \text{Capital} \times \text{WACC}$, given: $\text{NOPAT} = 500\,000\text{ €}$, $\text{Capital} = 2\,000\,000\text{ €}$, $\text{WACC} = 8\text{ %}$.
+- [x] $340\,000\text{ €}$
+- [ ] $400\,000\text{ €}$
+- [ ] $100\,000\text{ €}$
+- [ ] $160\,000\text{ €}$
+A: 
+EVA is calculated as: $500\,000\text{ €} - 2\,000\,000\text{ €} \times 0.08 = 500\,000\text{ €} - 160\,000\text{ €} = 340\,000\text{ €}$.
+
+---
+
+Q: 
+Based on the simplified asset class summary in the table, what is the most reasonable inference?
+[table]
+| Asset Class | General Risk Profile ($\sigma^2$) | Typical Liquidity |
+|---|---|---|
+| Government Bonds | Low | High |
+| Blue-Chip Stocks | Medium | High |
+| Real Estate | Medium-High | Low |
+| Venture Capital | Very High | Very Low |
+[/table]
+- [ ] All assets with high liquidity also have a low risk profile.
+- [x] Higher risk profiles are generally tied to lower liquidity.
+- [ ] Real Estate is presented as the most secure investment type.
+- [ ] There is no apparent relationship between risk and liquidity.
+A: 
+The table shows that as the risk profile increases from Government Bonds (Low) to Venture Capital (Very High), the typical liquidity decreases from High to Very Low. This suggests an inverse relationship where higher risk is associated with lower liquidity.
+
+---
+
+Q: 
+Prove that $\sqrt{2}$ is irrational.
+A:
+Assume $\sqrt{2}$ is rational, i.e., $\sqrt{2} = \frac{a}{b}$ where $a, b \in \mathbb{Z}$ with no common factors and $b \ne 0$.
+Then,
+$$2 = \frac{a^2}{b^2} \Rightarrow a^2 = 2b^2$$
+Since $a^2$ is even, $a$ must be even. Let $a = 2k$ for some integer $k$.
+Substitute back:
+$$(2k)^2 = 2b^2 \Rightarrow 4k^2 = 2b^2 \Rightarrow b^2 = 2k^2$$
+So $b^2$ is even, implying $b$ is even.
+But then both $a$ and $b$ are even, contradicting the assumption.
+Therefore, $\sqrt{2}$ is irrational.
+
+---
+
+Q: 
+Analyze the provided materials, which include a historical quote, a description of this quiz template's purpose, and a JavaScript code snippet of a `function`. Discuss their individual significance and how they relate to the broader context of information presentation and technical communication.
+
+[quote]
+"That's one small step for a man, a giant leap for mankind."
+— Neil Armstrong
+[/quote]
+
+[material]
+This quiz template is designed to provide a flexible and interactive platform for educational assessments. It supports both multiple-choice and open-ended questions, with immediate feedback mechanisms for multiple-choice questions and toggleable answers for open-ended ones. The design prioritizes accessibility, responsiveness, and clean code for offline functionality. Mathematical notation like $x^2 + y^2 = r^2$ can be seamlessly integrated.
+[/material]
+
+[code]
+function calculate(x, y) {
+  let sum = x + y;
+  let product = x * y;
+  return { sum: sum, product: product };
+}
+[/code]
+
+A:
+The Neil Armstrong quote, uttered on July 20, 1969, is historically significant as it encapsulates the profound impact of the Apollo 11 mission. It articulates the dual nature of the event: a personal achievement and a monumental advancement for humanity, symbolizing exploration, innovation, and Cold War era technological superiority.
+
+The quiz template's purpose is to serve as a versatile and user-friendly tool for educational assessments, supporting various interactive question formats. Its design emphasizes accessibility, mobile responsiveness, and offline functionality, making it suitable for diverse learning environments. The inclusion of MathJax for rendering mathematical expressions, such as $x^2 + y^2 = r^2$, further enhances its utility for technical or scientific content.
+
+The third material presents a JavaScript code snippet. In a technical assessment context, the task is to interpret its logic and predict its output. The `calculate` function takes two inputs, `x` and `y`, computes their sum and product, and returns an object containing both values. For example, `calculate(10, 5)` returns `{ sum: 15, product: 50 }`. The question’s code should be presented inside a code block to preserve indentation and line breaks, while inline elements such as `function` or `x` should be enclosed in single backticks. This formatting ensures readability and accurate technical communication.
+
+All three examples demonstrate different forms of information and the importance of appropriate presentation. Presenting them in separate, distinct material boxes within the same question allows for clear visual separation of distinct data points while still framing them under a common analytical task. This visual organization enhances readability and comprehension, particularly when dealing with varied or extensive source materials that require specific display conventions. Similarly, long mathematical formulas are automatically wrapped in a scrolling container to prevent overflow on any screen.
+$$P(x) = x^{20} + 3x^{19} - 2x^{18} + 5x^{17} + x^{16} - 7x^{15} + 4x^{14} + 2x^{13} - 8x^{12} + 6x^{11} + x^{10} - 9x^9 + 3x^8 - 5x^7 + 2x^6 - 10x^5 + 7x^4 + 3x^3 - 6x^2 + x + 100$$
+Any text, that is not math or code, can be **bolded** only with **double** asterisks and _italicized_ with only _single_ underscores. NEVER BOLD OR ITALICIZE MATH.
