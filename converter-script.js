@@ -139,28 +139,18 @@ function parseQuizdown(text) {
           const lines = content.trim().split('\n');
           const functionsLine = lines[0] || 'x';
           const limitsLine = lines[1] || '-10,10';
+          
           const functions = functionsLine.split(',').map(f => f.trim());
           const [xMin, xMax] = limitsLine.split(',').map(Number);
-          const plotConfig = {
-            width: 500,
-            height: 300,
-            xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
-            yAxis: { domain: [-10, 10] },
-            grid: true,
-            sampler: 'builtIn',
-            data: functions.map((fnString, i) => {
-              const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
-              const parts = fnString.split(':').map(p => p.trim());
-              const fn = parts[0];
-              const color = parts.length > 1 ? parts[1] : colors[i % colors.length];
-
-              return { 
-                  fn: fn, 
-                  color: color
-              };
-            })
+          
+          const plotData = {
+              target: `#${plotId}`,
+              xMin: isNaN(xMin) ? -10 : xMin,
+              xMax: isNaN(xMax) ? 10 : xMax,
+              functions: functions
           };
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="function-plot-container"></div><script>(function(){try{const config=${JSON.stringify(plotConfig)};config.target='#${plotId}';function formatLabel(fn){let formattedFn=fn.replace(/\\s/g,'');formattedFn=formattedFn.replace(/\\*/g,'\\\\cdot ');formattedFn=formattedFn.replace(/sqrt\\(([^)]+)\\)/g,'\\\\sqrt{$1}');formattedFn=formattedFn.replace(/cbrt\\(([^)]+)\\)/g,'\\\\sqrt[3]{$1}');formattedFn=formattedFn.replace(/nthRoot\\(([^,]+),([^)]+)\\)/g,'\\\\sqrt[$2]{$1}');formattedFn=formattedFn.replace(/abs\\(([^)]+)\\)/g,'|$1|');formattedFn=formattedFn.replace(/log\\(([^,]+),([^)]+)\\)/g,'\\\\log_{$2}($1)');formattedFn=formattedFn.replace(/log\\(([^)]+)\\)/g,'\\\\ln($1)');formattedFn=formattedFn.replace(/\\b(a)?(sin|cos|tan|csc|sec|cot)h?\\(([^)]+)\\)/g,(match,p1,p2,p3)=>{const arc=p1==='a'?'arc':'';const func='\\\\'+arc+p2;return func+'('+p3+')';});return formattedFn;}function createLegend(container,data){if(!container)return;const legend=document.createElement('div');legend.setAttribute('style','margin-top:10px;padding:10px;border:1px solid #ccc;border-radius:5px;font-family:sans-serif;font-size:14px;');data.forEach(d=>{const item=document.createElement('div');item.setAttribute('style','display:flex;align-items:center;margin-bottom:5px;');const swatch=document.createElement('span');swatch.setAttribute('style','display:inline-block;width:12px;height:12px;margin-right:8px;border:1px solid #777;background-color:'+d.color+';');const label=document.createElement('span');label.textContent='$'+formatLabel(d.fn)+'$';item.appendChild(swatch);item.appendChild(label);legend.appendChild(item);});if(legend.lastChild){legend.lastChild.style.marginBottom='0';}container.appendChild(legend);if(window.MathJax){window.MathJax.typeset([legend]);}}const plotInstance=functionPlot(config);createLegend(document.getElementById('${plotId}'),config.data);const originalXDomain=[...config.xAxis.domain];const originalYDomain=[...config.yAxis.domain];document.getElementById('${plotId}').addEventListener('dblclick',function(e){e.preventDefault();const container=document.getElementById('${plotId}');if(container){try{while(container.firstChild){container.removeChild(container.firstChild)}const resetConfig=JSON.parse(JSON.stringify(config));resetConfig.target='#${plotId}';resetConfig.xAxis.domain=[...originalXDomain];resetConfig.yAxis.domain=[...originalYDomain];functionPlot(resetConfig);createLegend(container,resetConfig.data)}catch(err){console.error("Reset failed:",err)}}})}catch(e){console.error("Plot config error:",e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>'}})();<\/script></div>`;
+
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const xValues=(min,max,n=500)=>{const step=(max-min)/n;return Array.from({length:n+1},(_,i)=>min+i*step);};const data=[];const defaultColors=['blue','red','green','purple','orange','brown','pink','gray'];const x=xValues(plotInfo.xMin,plotInfo.xMax);plotInfo.functions.forEach((fnStr,i)=>{const parts=fnStr.split(':').map(p=>p.trim());const fn=parts[0];const color=parts.length>1?parts[1]:defaultColors[i%defaultColors.length];const yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});data.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});const layout={margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1}};const config={displayModeBar:false,responsive:true};Plotly.newPlot(plotInfo.target.substring(1),data,layout,config);}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
         return '';
       });
@@ -221,10 +211,10 @@ function parseQuizdown(text) {
 }
 
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
-  const hasPlots = quizBody.includes('class="function-plot-container"');
-  // If plots exist, include math.js first, then function-plot.js
+  const hasPlots = quizBody.includes('class="plotly-container"');
+  // If plots exist, include math.js for evaluation and plotly.js for rendering.
   const plotScripts = hasPlots
-    ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"><\/script><script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
+    ? `<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"><\/script><script src="https://cdn.plot.ly/plotly-2.32.0.min.js"><\/script>`
     : '';
   
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
