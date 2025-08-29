@@ -173,7 +173,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Plotly.js plotting system - Minimal styling
+// Plotly.js plotting system - Ultra minimal styling
 window.plotData = ${JSON.stringify(globalPlotData)};
 
 window.initPlots = function() {
@@ -186,15 +186,18 @@ window.initPlots = function() {
         const container = document.getElementById(plot.id);
         if (container) {
             try {
-                // Generate x values with extended range to prevent cutting
+                // Generate x values with proper extended range to prevent cutting
                 const x = [];
                 const y = [];
-                for (let i = -12; i <= 12; i += 0.1) {
+                const step = 0.1;
+                const range = 15; // Extended range
+                
+                for (let i = -range; i <= range; i += step) {
                     x.push(i);
                     try {
-                        // Simple function evaluation
+                        // Function evaluation with proper handling
                         let result;
-                        const func = plot.latex;
+                        const func = plot.latex.toLowerCase();
                         
                         if (func.includes('x^2') || func.includes('x**2')) {
                             result = i * i;
@@ -203,81 +206,113 @@ window.initPlots = function() {
                         } else if (func.includes('cos')) {
                             result = Math.cos(i);
                         } else if (func.includes('tan')) {
-                            result = Math.tan(i);
+                            // Limit tan to prevent extreme values
+                            if (Math.abs(Math.cos(i)) < 0.001) {
+                                result = i > 0 ? 100 : -100;
+                            } else {
+                                result = Math.tan(i);
+                            }
                         } else if (func.includes('x^3') || func.includes('x**3')) {
                             result = i * i * i;
                         } else if (func.includes('sqrt')) {
-                            result = i >= 0 ? Math.sqrt(i) : 0;
+                            result = i >= 0 ? Math.sqrt(i) : null;
                         } else if (func.includes('exp')) {
-                            result = Math.exp(i);
+                            // Limit exp to prevent overflow
+                            result = i < 10 ? Math.exp(i) : (i < 0 ? Math.exp(i) : 1000);
                         } else if (func.includes('log')) {
-                            result = i > 0 ? Math.log(i) : 0;
+                            result = i > 0 ? Math.log(i) : null;
                         } else {
                             // Linear function as default
                             result = i;
                         }
-                        y.push(result);
+                        
+                        // Handle undefined values
+                        if (result === null || result === undefined || !isFinite(result)) {
+                            y.push(null);
+                        } else {
+                            // Limit extreme values to prevent cutting
+                            if (Math.abs(result) > 50) {
+                                result = result > 0 ? 50 : -50;
+                            }
+                            y.push(result);
+                        }
                     } catch(e) {
-                        y.push(0);
+                        y.push(null);
                     }
                 }
                 
-                // Create Plotly trace - minimal styling
+                // Remove null values for clean plotting
+                const cleanX = [];
+                const cleanY = [];
+                for (let i = 0; i < x.length; i++) {
+                    if (y[i] !== null) {
+                        cleanX.push(x[i]);
+                        cleanY.push(y[i]);
+                    }
+                }
+                
+                // Create Plotly trace - ultra minimal
                 const trace = {
-                    x: x,
-                    y: y,
+                    x: cleanX,
+                    y: cleanY,
                     type: 'scatter',
                     mode: 'lines',
                     line: {
-                        color: '#2196f3',
-                        width: 2
+                        color: '#333',
+                        width: 1.5
                     },
-                    name: plot.latex,
+                    fill: 'tozeroy',
+                    fillcolor: 'rgba(51, 122, 183, 0.1)',
                     hoverinfo: 'skip'
                 };
                 
-                // Minimal layout configuration
+                // Ultra minimal layout configuration
                 const layout = {
                     autosize: true,
                     margin: {
-                        l: 40,
-                        r: 20,
-                        b: 40,
-                        t: 20,
-                        pad: 4
+                        l: 30,
+                        r: 10,
+                        b: 30,
+                        t: 10,
+                        pad: 0
                     },
                     xaxis: {
                         showgrid: true,
-                        gridcolor: '#eee',
+                        gridcolor: '#f0f0f0',
                         gridwidth: 1,
                         zeroline: true,
-                        zerolinecolor: '#000',
+                        zerolinecolor: '#ddd',
                         zerolinewidth: 1,
                         showline: false,
                         showticklabels: false,
-                        fixedrange: true
+                        fixedrange: true,
+                        range: [-8, 8] // Visible range
                     },
                     yaxis: {
                         showgrid: true,
-                        gridcolor: '#eee',
+                        gridcolor: '#f0f0f0',
                         gridwidth: 1,
                         zeroline: true,
-                        zerolinecolor: '#000',
+                        zerolinecolor: '#ddd',
                         zerolinewidth: 1,
                         showline: false,
                         showticklabels: false,
-                        fixedrange: true
+                        fixedrange: true,
+                        range: [-8, 8] // Visible range
                     },
                     showlegend: false,
                     hovermode: false,
-                    dragmode: false
+                    dragmode: false,
+                    plot_bgcolor: 'white',
+                    paper_bgcolor: 'white'
                 };
                 
-                // Minimal configuration options
+                // Ultra minimal configuration
                 const config = {
                     displayModeBar: false,
                     displaylogo: false,
-                    staticPlot: true
+                    staticPlot: true,
+                    responsive: true
                 };
                 
                 // Render the plot
@@ -285,7 +320,7 @@ window.initPlots = function() {
                 
             } catch (e) {
                 console.error('Error creating Plotly plot for ' + plot.id, e);
-                container.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error loading graph: ' + e.message + '</p>';
+                container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px; font-size: 14px;">Graph</p>';
             }
         }
     });
@@ -307,7 +342,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.plotData.forEach(function(plot) {
                     const container = document.getElementById(plot.id);
                     if (container) {
-                        container.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Graph service unavailable</p>';
+                        container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px; font-size: 14px;">Graph</p>';
                     }
                 });
             }
@@ -330,10 +365,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <style>
         .plot-container {
             width: 100%;
-            height: 300px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin: 10px 0;
+            height: 250px;
+            border: 1px solid #eee;
+            border-radius: 3px;
+            margin: 15px 0;
             background: #fff;
         }
         .material-box {
