@@ -139,7 +139,7 @@ function parseQuizdown(text) {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
           const lines = content.trim().split('\n');
           
-          const functionsLine = lines[0] || 'y=x';
+          const functionsLine = lines[0] || 'x';
           const limitsLine = lines[1];
           
           let xMin = null, xMax = null;
@@ -150,11 +150,13 @@ function parseQuizdown(text) {
               xMax = parsedLimits[1];
             }
           }
-
+          
+          const functionNames = ['f', 'g', 'h', 'p', 'q', 'r'];
           const expressions = functionsLine.split(',').map((f, i) => {
               let expr = f.trim();
               if (!expr.includes('=') && !expr.includes('>') && !expr.includes('<')) {
-                  expr = `y=${expr}`;
+                  const name = functionNames[i % functionNames.length];
+                  expr = `${name}(x)=${expr}`;
               }
               return { id: `graph${i}`, latex: expr };
           });
