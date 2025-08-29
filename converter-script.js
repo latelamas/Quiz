@@ -137,23 +137,19 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-          const lines = content.trim().split('\n');
           
-          const functionsLine = lines[0] || 'x';
-          const limitsLine = lines[1];
-          
-          let xMin = null, xMax = null;
-          if (limitsLine) {
-            const parsedLimits = limitsLine.split(',').map(Number);
-            if (parsedLimits.length === 2 && !isNaN(parsedLimits[0]) && !isNaN(parsedLimits[1])) {
-              xMin = parsedLimits[0];
-              xMax = parsedLimits[1];
-            }
-          }
+          const functionsLine = content.trim() || 'x';
           
           const functionNames = ['f', 'g', 'h', 'p', 'q', 'r'];
           const expressions = functionsLine.split(',').map((f, i) => {
               let expr = f.trim();
+
+              // Handle LaTeX delimiters
+              if (expr.startsWith('$') && expr.endsWith('$')) {
+                  expr = expr.substring(1, expr.length - 1).trim();
+              }
+
+              // Prepend function name if it's a simple expression
               if (!expr.includes('=') && !expr.includes('>') && !expr.includes('<')) {
                   const name = functionNames[i % functionNames.length];
                   expr = `${name}(x)=${expr}`;
@@ -163,11 +159,10 @@ function parseQuizdown(text) {
 
           const plotData = {
               targetId: plotId,
-              expressions: expressions,
-              bounds: xMin !== null ? { left: xMin, right: xMax } : null
+              expressions: expressions
           };
 
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt);plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});if(plotInfo.bounds){calculator.setGraphpaperBounds(plotInfo.bounds);}}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt);plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
         return '';
       });
