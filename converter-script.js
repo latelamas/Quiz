@@ -11,7 +11,6 @@ async function fetchResources() {
       fetch('script.js')
     ]);
 
-    // Check if the fetch was successful (status code 200-299)
     if (!cssResponse.ok) throw new Error(`CSS fetch failed: ${cssResponse.statusText}`);
     if (!jsResponse.ok) throw new Error(`JS fetch failed: ${jsResponse.statusText}`);
 
@@ -26,19 +25,13 @@ async function fetchResources() {
   } catch (e) {
     console.error('Failed to load resources:', e);
     alert('Failed to load required files (styles.css, script.js). Make sure they are in the same directory and you are running this from a web server.');
-
-    // --- THIS IS THE FIX ---
-    // Restore the button to a usable state even if loading fails.
     runBtn.textContent = 'Error - Files Not Found';
-    // Re-enable the button so the user is not stuck.
     runBtn.disabled = false;
   }
 }
 
-// Fetch external resources when the page loads
 fetchResources();
 
-// Add event listeners to the buttons
 document.addEventListener('DOMContentLoaded', () => {
     const runButton = document.getElementById('runBtn');
     const downloadButton = document.getElementById('downloadBtn');
@@ -50,11 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-// --- THE NEW MULTI-LINE AWARE PARSER ---
 function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
-
   let quizTitle = "Generated Quiz";
   let questionText = text;
 
@@ -63,15 +53,12 @@ function parseQuizdown(text) {
     if (endOfHeaderIndex > 0) {
       const headerText = text.substring(4, endOfHeaderIndex);
       questionText = text.substring(endOfHeaderIndex + 5);
-
       headerText.split('\n').forEach(line => {
         const parts = line.split(':');
         if (parts.length >= 2) {
           const key = parts[0].trim();
           const value = parts.slice(1).join(':').trim();
-          if (key === 'title') {
-            quizTitle = value;
-          }
+          if (key === 'title') quizTitle = value;
         }
       });
     }
@@ -79,7 +66,6 @@ function parseQuizdown(text) {
 
   function applyFormatting(str) {
     if (!str) return '';
-
     const mathBlocks = [];
     str = str.replace(/\$\$([\s\S]*?)\$\$/g, (match, p1) => {
       const token = `@@MATH${mathBlocks.length}@@`;
@@ -91,14 +77,9 @@ function parseQuizdown(text) {
       mathBlocks.push({ token, content: `$${p1}$` });
       return token;
     });
-
     str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     str = str.replace(/_([\s\S]+?)_/g, '<i>$1</i>');
-
-    mathBlocks.forEach(m => {
-      str = str.replace(m.token, m.content);
-    });
-
+    mathBlocks.forEach(m => { str = str.replace(m.token, m.content); });
     return str;
   }
 
@@ -111,11 +92,9 @@ function parseQuizdown(text) {
   }
 
   const questionBlocks = questionText.split(/\n---\n/).filter(block => block.trim() !== '');
-
   const questionsHtml = questionBlocks.map((block, index) => {
     try {
       block = block.split('\n').filter(line => !line.trim().startsWith('//')).join('\n').trim();
-
       const qNum = index + 1;
       let materialsHtml = '';
 
@@ -130,34 +109,49 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box"><p class="content-text">${applyFormatting(content).replace(/\n\n/g, '</p><p class="content-text">')}</p></div>`;
         } else if (type === 'table') {
           const rows = content.split('\n').map(r => r.trim().slice(1, -1).split('|').map(c => c.trim()));
-          const header = rows[0];
-          const body = rows.slice(2);
-          const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+          const tableHtml = `<table class="data-table"><thead><tr>${rows[0].map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(2).map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          
+          // --- REWRITTEN PLOT PARSING LOGIC ---
           const lines = content.trim().split('\n');
-          const functionsLine = lines[0] || 'x';
-          const limitsLine = lines[1] || '-10,10';
-          const functions = functionsLine.split(',').map(f => f.trim());
+          const limitsLine = lines.pop();
           const [xMin, xMax] = limitsLine.split(',').map(Number);
+          
+          const plotData = [];
+          for (let i = 0; i < lines.length; i += 2) {
+            const fn = lines[i]?.trim();
+            const color = lines[i+1]?.trim();
+            if (fn && color) {
+              plotData.push({ fn, color, closed: true });
+            }
+          }
+
           const plotConfig = {
-            width: 500,
-            height: 300,
+            width: 500, height: 300,
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-            data: functions.map((fn, i) => {
-                const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
-                // Add closed: true to fill the area under the function's curve
-                return { 
-                    fn: fn, 
-                    color: colors[i % colors.length],
-                    closed: true 
-                };
-            })
+            data: plotData
           };
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="function-plot-container"></div><script>(function(){try{const config=${JSON.stringify(plotConfig)};config.target='#${plotId}';const plotInstance=functionPlot(config);const originalXDomain=[...config.xAxis.domain];const originalYDomain=[...config.yAxis.domain];document.getElementById('${plotId}').addEventListener('dblclick',function(e){e.preventDefault();const container=document.getElementById('${plotId}');if(container){try{while(container.firstChild){container.removeChild(container.firstChild)}const resetConfig=JSON.parse(JSON.stringify(config));resetConfig.target='#${plotId}';resetConfig.xAxis.domain=[...originalXDomain];resetConfig.yAxis.domain=[...originalYDomain];functionPlot(resetConfig)}catch(err){console.error("Reset failed:",err)}}})}catch(e){console.error("Plot config error:",e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>'}})();<\/script></div>`;
+
+          materialsHtml += `
+            <div class="material-box">
+              <div id="${plotId}" class="function-plot-container"></div>
+              <script>
+                (function(){
+                  try {
+                    const config = ${JSON.stringify(plotConfig)};
+                    config.target = '#${plotId}';
+                    const plotInstance = functionPlot(config);
+                  } catch (e) {
+                    console.error("Plot config error:", e);
+                    document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
+                  }
+                })();
+              <\/script>
+            </div>`;
         }
         return '';
       });
@@ -165,7 +159,6 @@ function parseQuizdown(text) {
       const lines = block.trim().split('\n');
       const questionLines = [], options = [], answerLines = [];
       let currentSection = 'question';
-
       for (const line of lines) {
         if (line.startsWith('- [')) {
           currentSection = 'options';
@@ -194,15 +187,13 @@ function parseQuizdown(text) {
       const isMcq = options.length > 0;
       const qId = `q${qNum}`;
       let html = `<section class="question-block" id="${qId}" ${isMcq ? `data-correct-answer="${String.fromCharCode(97 + options.findIndex(opt => opt.correct))}"` : ''} aria-labelledby="${qId}-title">`;
-      html += `<p class="question-number" id="${qId}-number">${qNum}.</p><p class="question-title" id="${qId}-title">${questionTitle}</p>${materialsHtml}`;
-
+      html += `<p class="question-number">${qNum}.</p><p class="question-title" id="${qId}-title">${questionTitle}</p>${materialsHtml}`;
       if (isMcq) {
-        html += '<fieldset><div class="options" role="radiogroup">';
+        html += `<fieldset><div class="options" role="radiogroup">`;
         options.forEach((opt, i) => {
-          const val = String.fromCharCode(97 + i);
-          html += `<label><input type="radio" name="${qId}" value="${val}"> ${opt.text}</label>`;
+          html += `<label><input type="radio" name="${qId}" value="${String.fromCharCode(97 + i)}"> ${opt.text}</label>`;
         });
-        html += `</div></fieldset><button class="check-button" aria-controls="${qId}-feedback ${qId}-explanation">Check</button><div class="feedback" id="${qId}-feedback" role="alert" aria-live="polite"></div><div class="explanation" id="${qId}-explanation" aria-live="polite">${answer}</div>`;
+        html += `</div></fieldset><button class="check-button">Check</button><div class="feedback" id="${qId}-feedback"></div><div class="explanation" id="${qId}-explanation">${answer}</div>`;
       } else if (answer) {
         html += `<details><summary>Show/Hide</summary><div class="answer-box">${answer}</div></details>`;
       }
@@ -213,13 +204,11 @@ function parseQuizdown(text) {
       return `<section class="question-block error"><p class="question-title"><strong>${index + 1}.</strong> Error parsing this question.</p></section>`;
     }
   }).join('');
-
   return { title: quizTitle, body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>` };
 }
 
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
-  const hasPlots = quizBody.includes('class="function-plot-container"');
-  const functionPlotScript = hasPlots ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>` : '';
+  const functionPlotScript = quizBody.includes('class="function-plot-container"') ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>` : '';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
@@ -239,10 +228,7 @@ function runCode() {
   const fullHtml = generateQuizHtml();
   if (!fullHtml) return;
   if (!newTab || newTab.closed) newTab = window.open("", "_blank");
-  if (!newTab) {
-    alert("Popup blocked! Please allow popups for this site.");
-    return;
-  }
+  if (!newTab) { alert("Popup blocked!"); return; }
   newTab.document.open();
   newTab.document.write(fullHtml);
   newTab.document.close();
