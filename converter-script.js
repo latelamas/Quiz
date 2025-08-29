@@ -175,7 +175,7 @@ function parseQuizdown(text) {
   };
 }
 
-// --- FUNCTION MODIFIED: Added Desmos initialization for plots ---
+// --- FUNCTION MODIFIED: Added Desmos initialization for plots with interactive features ---
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     // Add Desmos initialization script if there are plots
     let additionalScript = '';
@@ -198,13 +198,16 @@ window.initPlots = function() {
             container.style.height = '300px';
             
             try {
+                // Enable interactive features for Desmos graphs
                 const calculator = Desmos.GraphingCalculator(container, {
-                    keypad: false,
-                    expressions: false,
-                    settingsMenu: false,
-                    zoomButtons: false,
-                    expressionsTopbar: false,
-                    border: false
+                    keypad: true,
+                    expressions: true,
+                    settingsMenu: true,
+                    zoomButtons: true,
+                    expressionsTopbar: true,
+                    border: true,
+                    expressionsCollapsed: false,
+                    administerSecretFolders: false
                 });
                 
                 calculator.setExpression({id: 'function', latex: plot.latex});
