@@ -137,7 +137,7 @@ function parseQuizdown(text) {
           const calculatorOptions = {
             keypad: false,
             settingsMenu: false,
-            lockViewport: false,
+            lockViewport: true,
             zoomButtons: false,
             expressionsCollapsed: false
           };
@@ -215,12 +215,15 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     : '';
 
   const desmosReadOnlyStyle = `
-    .dcg-expression-math-container .dcg-mq-root-block,
-    .dcg-expression-icon-container {
-      pointer-events: none !important;
+    .desmos-container .dcg-expression-mathquill-container {
+        pointer-events: none !important;
     }
-    .dcg-add-expression-container,
-    .dcg-edit-list-mode-toggle {
+    .desmos-container .dcg-expression-icon-container {
+        pointer-events: none !important;
+    }
+    .desmos-container .dcg-add-expression-container,
+    .desmos-container .dcg-add-item-container,
+    .desmos-container .dcg-edit-list-mode-toggle {
         display: none !important;
     }
   `;
