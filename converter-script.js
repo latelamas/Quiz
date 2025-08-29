@@ -136,7 +136,7 @@ function parseQuizdown(text) {
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-            data: functions.map((fn, i) => {
+             functions.map((fn, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
               return {
                 fn: fn,
@@ -153,7 +153,20 @@ function parseQuizdown(text) {
                   try {
                     const config = ${JSON.stringify(plotConfig)};
                     config.target = '#${plotId}';
-                    functionPlot(config);
+                    const plotInstance = functionPlot(config);
+                    
+                    // Add double-click reset functionality
+                    const container = document.getElementById('${plotId}');
+                    container.addEventListener('dblclick', function() {
+                      try {
+                        container.innerHTML = '';
+                        const newConfig = ${JSON.stringify(plotConfig)};
+                        newConfig.target = '#${plotId}';
+                        functionPlot(newConfig);
+                      } catch (e) {
+                        console.error("Error resetting plot:", e);
+                      }
+                    });
                   } catch (e) {
                     console.error("Plot config error:", e);
                     document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
