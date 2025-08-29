@@ -155,31 +155,15 @@ function parseQuizdown(text) {
                     config.target = '#${plotId}';
                     const plotInstance = functionPlot(config);
                     
-                    // Store original domains for reset
-                    const originalXDomain = [...config.xAxis.domain];
-                    const originalYDomain = [...config.yAxis.domain];
-                    
+                    // --- FIX: Disable the default double-click zoom ---
+                    plotInstance.getPlottable().on('dblclick.zoom', null);
+          
                     // Add double-click reset functionality
-                    document.getElementById('${plotId}').addEventListener('dblclick', function(e) {
-                      e.preventDefault();
-                      const container = document.getElementById('${plotId}');
-                      if (container) {
-                        try {
-                          // Clear container
-                          while (container.firstChild) {
-                            container.removeChild(container.firstChild);
-                          }
-                          // Re-render with original domains
-                          const resetConfig = JSON.parse(JSON.stringify(config));
-                          resetConfig.target = '#${plotId}';
-                          resetConfig.xAxis.domain = [...originalXDomain];
-                          resetConfig.yAxis.domain = [...originalYDomain];
-                          functionPlot(resetConfig);
-                        } catch (err) {
-                          console.error("Reset failed:", err);
-                        }
-                      }
+                    plotInstance.getPlottable().on('dblclick', function() {
+                      plotInstance.setXDomain(config.xAxis.domain);
+                      plotInstance.setYDomain(config.yAxis.domain);
                     });
+          
                   } catch (e) {
                     console.error("Plot config error:", e);
                     document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
