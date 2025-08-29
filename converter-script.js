@@ -120,7 +120,30 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-          const plotConfig = content.trim();
+          
+          // Parse simplified plot syntax
+          const lines = content.trim().split('\n');
+          const functionsLine = lines[0] || 'x';
+          const limitsLine = lines[1] || '-10,10';
+          
+          const functions = functionsLine.split(',').map(f => f.trim());
+          const [xMin, xMax] = limitsLine.split(',').map(Number);
+          
+          // Generate plot config
+          const plotConfig = {
+            width: 500,
+            height: 300,
+            xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
+            yAxis: { domain: [-10, 10] },
+            grid: true,
+            data: functions.map((fn, i) => {
+              const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
+              return {
+                fn: fn,
+                color: colors[i % colors.length]
+              };
+            })
+          };
 
           materialsHtml += `
             <div class="material-box">
@@ -128,7 +151,7 @@ function parseQuizdown(text) {
               <script>
                 (function(){
                   try {
-                    const config = ${JSON.stringify(JSON.parse(plotConfig))};
+                    const config = ${JSON.stringify(plotConfig)};
                     config.target = '#${plotId}';
                     functionPlot(config);
                   } catch (e) {
