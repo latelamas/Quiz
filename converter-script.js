@@ -119,25 +119,30 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-          
+
           const expressions = content.split('\n')
             .map(f => f.trim())
             .filter(f => f)
             .map((f, i) => {
               const expressionObj = { id: `graph${i}` };
-              const sliderRegex = /^[a-zA-Z]\s*=\s*-?\d*\.?\d+.*$/;
-              expressionObj.isSlider = sliderRegex.test(f);
-              const limitsRegex = /\{([^}]+)\}/;
-              const limitsMatch = f.match(limitsRegex);
+              let currentLatex = f;
 
-              if (expressionObj.isSlider && limitsMatch) {
+              const limitsRegex = /\{([^}]+)\}/;
+              const limitsMatch = currentLatex.match(limitsRegex);
+              if (limitsMatch) {
                 const [min, max, step] = limitsMatch[1].split(',').map(Number);
                 expressionObj.slider = { min, max, step };
-                expressionObj.latex = f.replace(limitsRegex, '').trim();
-              } else {
-                expressionObj.latex = f;
+                currentLatex = currentLatex.replace(limitsRegex, '').trim();
               }
 
+              const sliderRegex = /^[a-zA-Z]\s*=\s*-?\d*\.?\d+.*$/;
+              expressionObj.isSlider = sliderRegex.test(currentLatex);
+
+              if (currentLatex.startsWith('$') && currentLatex.endsWith('$')) {
+                currentLatex = currentLatex.substring(1, currentLatex.length - 1).trim();
+              }
+              expressionObj.latex = currentLatex;
+              
               return expressionObj;
             });
 
