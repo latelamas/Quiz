@@ -102,8 +102,28 @@ function parseQuizdown(text) {
         } else if (type === 'plot') {
             const plotId = `plot-${qNum}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const escapedLatex = content.replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
+            
+            // Parse attributes for custom limits
+            let limits = {};
+            if (attrs) {
+                const rangeMatch = attrs.match(/range:\s*\[(-?\d+\.?\d*),\s*(-?\d+\.?\d*)\]/);
+                if (rangeMatch) {
+                    limits.xMin = parseFloat(rangeMatch[1]);
+                    limits.xMax = parseFloat(rangeMatch[2]);
+                }
+                const stepMatch = attrs.match(/step:\s*(\d+\.?\d*)/);
+                if (stepMatch) {
+                    limits.step = parseFloat(stepMatch[1]);
+                }
+            }
+            
             materialsHtml += `<div class="material-box"><div class="plot-wrapper"><div id="${plotId}" class="plot-container"></div></div></div>`;
-            globalPlotData.push({ id: plotId, latex: escapedLatex, question: qNum });
+            globalPlotData.push({ 
+                id: plotId, 
+                latex: escapedLatex, 
+                question: qNum,
+                limits: limits
+            });
         }
         return '';
       });
@@ -173,7 +193,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Plotly.js plotting system - Smart scaling with function-specific ranges
+// Plotly.js plotting system - Custom limits support
 window.plotData = ${JSON.stringify(globalPlotData)};
 
 window.initPlots = function() {
@@ -186,34 +206,42 @@ window.initPlots = function() {
         const container = document.getElementById(plot.id);
         if (container) {
             try {
-                // Determine function type for appropriate range
-                const func = plot.latex.toLowerCase();
-                let generateRange = 10;
-                let step = 0.1;
+                // Get custom limits or use defaults
+                let xMin = plot.limits && plot.limits.xMin !== undefined ? plot.limits.xMin : -10;
+                let xMax = plot.limits && plot.limits.xMax !== undefined ? plot.limits.xMax : 10;
+                let step = plot.limits && plot.limits.step !== undefined ? plot.limits.step : 0.1;
                 
-                // Function-specific range adjustments
-                if (func.includes('x^3') || func.includes('x**3')) {
-                    generateRange = 4; // Smaller range for cubic functions
-                    step = 0.05;
-                } else if (func.includes('exp')) {
-                    generateRange = 3; // Very small range for exponential
-                    step = 0.02;
-                } else if (func.includes('sin') || func.includes('cos')) {
-                    generateRange = 4 * Math.PI; // Multiple periods for trig functions
-                    step = 0.1;
-                } else if (func.includes('x^2') || func.includes('x**2')) {
-                    generateRange = 5; // Medium range for quadratics
-                    step = 0.1;
+                // Override with function-specific defaults if no custom limits
+                if (!plot.limits || (plot.limits.xMin === undefined && plot.limits.xMax === undefined)) {
+                    const func = plot.latex.toLowerCase();
+                    if (func.includes('x^3') || func.includes('x**3')) {
+                        xMin = -4;
+                        xMax = 4;
+                        step = 0.05;
+                    } else if (func.includes('exp')) {
+                        xMin = -3;
+                        xMax = 3;
+                        step = 0.02;
+                    } else if (func.includes('sin') || func.includes('cos')) {
+                        xMin = -2 * Math.PI;
+                        xMax = 2 * Math.PI;
+                        step = 0.1;
+                    } else if (func.includes('x^2') || func.includes('x**2')) {
+                        xMin = -5;
+                        xMax = 5;
+                        step = 0.1;
+                    }
                 }
                 
                 // Generate x values
                 const x = [];
                 const y = [];
                 
-                for (let i = -generateRange; i <= generateRange; i += step) {
+                for (let i = xMin; i <= xMax; i += step) {
                     x.push(i);
                     try {
                         let result;
+                        const func = plot.latex.toLowerCase();
                         
                         if (func.includes('x^2') || func.includes('x**2')) {
                             result = i * i;
@@ -265,39 +293,24 @@ window.initPlots = function() {
                     }
                 }
                 
-                // Smart scaling - calculate appropriate ranges
-                let xMin = Math.min(...cleanX);
-                let xMax = Math.max(...cleanX);
+                // Smart scaling for y-axis
                 let yMin = Math.min(...cleanY);
                 let yMax = Math.max(...cleanY);
                 
-                // Add padding
-                const xRange = xMax - xMin;
+                // Add padding to y-axis
                 const yRange = yMax - yMin;
-                const xPadding = xRange * 0.1;
                 const yPadding = yRange * 0.1;
                 
-                xMin -= xPadding;
-                xMax += xPadding;
                 yMin -= yPadding;
                 yMax += yPadding;
                 
                 // Handle edge cases
-                if (xRange === 0) {
-                    xMin -= 1;
-                    xMax += 1;
-                }
                 if (yRange === 0) {
                     yMin -= 1;
                     yMax += 1;
                 }
                 
                 // Ensure reasonable minimum ranges
-                if (xMax - xMin < 2) {
-                    const center = (xMin + xMax) / 2;
-                    xMin = center - 1;
-                    xMax = center + 1;
-                }
                 if (yMax - yMin < 2) {
                     const center = (yMin + yMax) / 2;
                     yMin = center - 1;
@@ -317,7 +330,7 @@ window.initPlots = function() {
                     hoverinfo: 'none'
                 };
                 
-                // Layout with smart scaling
+                // Layout with custom or smart scaling
                 const layout = {
                     autosize: true,
                     margin: {
