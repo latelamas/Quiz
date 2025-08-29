@@ -11,8 +11,9 @@ async function fetchResources() {
       fetch('script.js')
     ]);
 
-    if (!cssResponse.ok) throw new Error(`CSS fetch failed: ${cssResponse.status}`);
-    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${jsResponse.status}`);
+    // Check if the fetch was successful (status code 200-299)
+    if (!cssResponse.ok) throw new Error(`CSS fetch failed: ${cssResponse.statusText}`);
+    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${jsResponse.statusText}`);
 
     const cssContent = await cssResponse.text();
     const jsContent = await jsResponse.text();
@@ -24,18 +25,37 @@ async function fetchResources() {
     runBtn.disabled = false;
   } catch (e) {
     console.error('Failed to load resources:', e);
-    alert('Failed to load required resources. Please check console for details.');
+    alert('Failed to load required files (styles.css, script.js). Make sure they are in the same directory and you are running this from a web server.');
+
+    // --- THIS IS THE FIX ---
+    // Restore the button to a usable state even if loading fails.
+    runBtn.textContent = 'Error - Files Not Found';
+    // Re-enable the button so the user is not stuck.
+    runBtn.disabled = false;
   }
 }
 
+// Fetch external resources when the page loads
 fetchResources();
+
+// Add event listeners to the buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const runButton = document.getElementById('runBtn');
+    const downloadButton = document.getElementById('downloadBtn');
+    if (runButton) {
+        runButton.addEventListener('click', runCode);
+    }
+    if (downloadButton) {
+        downloadButton.addEventListener('click', downloadCode);
+    }
+});
+
 
 // --- THE NEW MULTI-LINE AWARE PARSER ---
 function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
 
   let quizTitle = "Generated Quiz";
-  let shuffleOptions = true; // Always true now
   let questionText = text;
 
   if (text.startsWith('---\n')) {
@@ -60,7 +80,6 @@ function parseQuizdown(text) {
   function applyFormatting(str) {
     if (!str) return '';
 
-    // Step 1: Protect all math (inline $…$ and block $$…$$)
     const mathBlocks = [];
     str = str.replace(/\$\$([\s\S]*?)\$\$/g, (match, p1) => {
       const token = `@@MATH${mathBlocks.length}@@`;
@@ -73,12 +92,9 @@ function parseQuizdown(text) {
       return token;
     });
 
-    // Step 2: Apply formatting
-    // Bold: **text**
     str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Italic: _text_ (single underscore)
     str = str.replace(/_([\s\S]+?)_/g, '<i>$1</i>');
-    // Step 3: Restore math blocks
+
     mathBlocks.forEach(m => {
       str = str.replace(m.token, m.content);
     });
@@ -106,7 +122,6 @@ function parseQuizdown(text) {
       block = block.replace(/\[(code|quote|table|material|plot)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/gs, (match, type, content) => {
         content = content.trim();
         if (type === 'code') {
-          // FIXED: Correctly escape HTML characters to prevent them from being rendered.
           materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
         } else if (type === 'quote') {
           const parts = content.split('\n—');
@@ -121,95 +136,43 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-
-          // Parse simplified plot syntax
           const lines = content.trim().split('\n');
           const functionsLine = lines[0] || 'x';
           const limitsLine = lines[1] || '-10,10';
-
           const functions = functionsLine.split(',').map(f => f.trim());
           const [xMin, xMax] = limitsLine.split(',').map(Number);
-
-          // Generate plot config
           const plotConfig = {
             width: 500,
             height: 300,
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-            // FIXED: Added the 'data' key for the functions array, which is required by function-plot.
             data: functions.map((fn, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
-              return {
-                fn: fn,
-                color: colors[i % colors.length]
-              };
+              return { fn: fn, color: colors[i % colors.length] };
             })
           };
-
-          materialsHtml += `
-            <div class="material-box">
-              <div id="${plotId}" class="function-plot-container"></div>
-              <script>
-                (function(){
-                  try {
-                    const config = ${JSON.stringify(plotConfig)};
-                    config.target = '#${plotId}';
-                    const plotInstance = functionPlot(config);
-                    
-                    const originalXDomain = [...config.xAxis.domain];
-                    const originalYDomain = [...config.yAxis.domain];
-                    
-                    document.getElementById('${plotId}').addEventListener('dblclick', function(e) {
-                      e.preventDefault();
-                      const container = document.getElementById('${plotId}');
-                      if (container) {
-                        try {
-                          while (container.firstChild) {
-                            container.removeChild(container.firstChild);
-                          }
-                          const resetConfig = JSON.parse(JSON.stringify(config));
-                          resetConfig.target = '#${plotId}';
-                          resetConfig.xAxis.domain = [...originalXDomain];
-                          resetConfig.yAxis.domain = [...originalYDomain];
-                          functionPlot(resetConfig);
-                        } catch (err) {
-                          console.error("Reset failed:", err);
-                        }
-                      }
-                    });
-                  } catch (e) {
-                    console.error("Plot config error:", e);
-                    document.getElementById('${plotId}').innerHTML = '<p class="error">Invalid plot configuration.</p>';
-                  }
-                })();
-              <\/script>
-            </div>`;
+          materialsHtml += `<div class="material-box"><div id="${plotId}" class="function-plot-container"></div><script>(function(){try{const config=${JSON.stringify(plotConfig)};config.target='#${plotId}';const plotInstance=functionPlot(config);const originalXDomain=[...config.xAxis.domain];const originalYDomain=[...config.yAxis.domain];document.getElementById('${plotId}').addEventListener('dblclick',function(e){e.preventDefault();const container=document.getElementById('${plotId}');if(container){try{while(container.firstChild){container.removeChild(container.firstChild)}const resetConfig=JSON.parse(JSON.stringify(config));resetConfig.target='#${plotId}';resetConfig.xAxis.domain=[...originalXDomain];resetConfig.yAxis.domain=[...originalYDomain];functionPlot(resetConfig)}catch(err){console.error("Reset failed:",err)}}})}catch(e){console.error("Plot config error:",e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>'}})();<\/script></div>`;
         }
         return '';
       });
 
-      // --- Section-based parsing ---
       const lines = block.trim().split('\n');
-      const questionLines = [];
-      const options = [];
-      const answerLines = [];
+      const questionLines = [], options = [], answerLines = [];
       let currentSection = 'question';
 
       for (const line of lines) {
         if (line.startsWith('- [')) {
           currentSection = 'options';
           options.push({ correct: line.startsWith('- [x]'), text: applyFormatting(line.substring(5).trim()) });
-          continue;
-        }
-        if (line.startsWith('A:')) {
+        } else if (line.startsWith('A:')) {
           currentSection = 'answer';
           answerLines.push(line.substring(2).trim());
-          continue;
+        } else if (currentSection === 'question') {
+          questionLines.push(line);
+        } else if (currentSection === 'answer') {
+          answerLines.push(line);
         }
-
-        if (currentSection === 'question') questionLines.push(line);
-        else if (currentSection === 'answer') answerLines.push(line);
       }
 
       if (questionLines.length > 0 && questionLines[0].trim().startsWith('Q:')) {
@@ -220,21 +183,13 @@ function parseQuizdown(text) {
 
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
-
-      if (options.length > 0) {
-        shuffleArray(options);
-      }
-
+      if (options.length > 0) shuffleArray(options);
       if (!questionTitle) return '';
 
       const isMcq = options.length > 0;
       const qId = `q${qNum}`;
       let html = `<section class="question-block" id="${qId}" ${isMcq ? `data-correct-answer="${String.fromCharCode(97 + options.findIndex(opt => opt.correct))}"` : ''} aria-labelledby="${qId}-title">`;
-
-      html += `<p class="question-number" id="${qId}-number">${qNum}.</p>
-               <p class="question-title" id="${qId}-title">${questionTitle}</p>`;
-
-      html += materialsHtml;
+      html += `<p class="question-number" id="${qId}-number">${qNum}.</p><p class="question-title" id="${qId}-title">${questionTitle}</p>${materialsHtml}`;
 
       if (isMcq) {
         html += '<fieldset><div class="options" role="radiogroup">';
@@ -243,10 +198,8 @@ function parseQuizdown(text) {
           html += `<label><input type="radio" name="${qId}" value="${val}"> ${opt.text}</label>`;
         });
         html += `</div></fieldset><button class="check-button" aria-controls="${qId}-feedback ${qId}-explanation">Check</button><div class="feedback" id="${qId}-feedback" role="alert" aria-live="polite"></div><div class="explanation" id="${qId}-explanation" aria-live="polite">${answer}</div>`;
-      } else {
-        if (answer) {
-          html += `<details><summary>Show/Hide</summary><div class="answer-box">${answer}</div></details>`;
-        }
+      } else if (answer) {
+        html += `<details><summary>Show/Hide</summary><div class="answer-box">${answer}</div></details>`;
       }
       html += '</section>';
       return html;
@@ -256,48 +209,31 @@ function parseQuizdown(text) {
     }
   }).join('');
 
-  return {
-    title: quizTitle,
-    body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>`
-  };
+  return { title: quizTitle, body: `<h1>${quizTitle}</h1><div class="quiz-section">${questionsHtml}</div>` };
 }
 
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const hasPlots = quizBody.includes('class="function-plot-container"');
-  const functionPlotScript = hasPlots
-    ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>`
-    : '';
-
-  // FIXED: Made script tag escaping consistent for better practice.
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  const functionPlotScript = hasPlots ? `<script src="https://cdn.jsdelivr.net/npm/function-plot/dist/function-plot.min.js"><\/script>` : '';
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${functionPlotScript}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
-// --- REFACTORED LOGIC ---
-// Helper function to generate HTML, avoiding code duplication.
 function generateQuizHtml() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
   const jsContent = document.getElementById("jsCode").value;
-
   if (!quizdownContent.trim() || !jsContent.trim() || !cssContent.trim()) {
     alert("Please wait for resources to load or paste quiz content.");
-    return null; // Return null if content is missing
+    return null;
   }
-
   const quizOutput = parseQuizdown(quizdownContent);
   return createFullHtml(quizOutput.title, quizOutput.body, cssContent, jsContent);
 }
 
-
 function runCode() {
   const fullHtml = generateQuizHtml();
-  if (!fullHtml) {
-    return; // Stop if HTML generation failed
-  }
-
-  if (!newTab || newTab.closed) {
-    newTab = window.open("", "_blank");
-  }
+  if (!fullHtml) return;
+  if (!newTab || newTab.closed) newTab = window.open("", "_blank");
   if (!newTab) {
     alert("Popup blocked! Please allow popups for this site.");
     return;
@@ -310,16 +246,13 @@ function runCode() {
 
 function downloadCode() {
   const fullHtml = generateQuizHtml();
-  if (!fullHtml) {
-    return; // Stop if HTML generation failed
-  }
-
+  if (!fullHtml) return;
   const blob = new Blob([fullHtml], { type: "text/html" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = "quiz.html";
-  document.body.appendChild(link); // Append to body to ensure it's clickable
+  document.body.appendChild(link);
   link.click();
-  document.body.removeChild(link); // Clean up
+  document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
 }
