@@ -119,26 +119,37 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          
           const expressions = content.split('\n')
             .map(f => f.trim())
             .filter(f => f)
             .map((f, i) => {
-              let expr = f;
-              if (expr.startsWith('$') && expr.endsWith('$')) {
-                  expr = expr.substring(1, expr.length - 1).trim();
+              const expressionObj = { id: `graph${i}` };
+              const sliderRegex = /^[a-zA-Z]\s*=\s*-?\d*\.?\d+.*$/;
+              expressionObj.isSlider = sliderRegex.test(f);
+              const limitsRegex = /\{([^}]+)\}/;
+              const limitsMatch = f.match(limitsRegex);
+
+              if (expressionObj.isSlider && limitsMatch) {
+                const [min, max, step] = limitsMatch[1].split(',').map(Number);
+                expressionObj.slider = { min, max, step };
+                expressionObj.latex = f.replace(limitsRegex, '').trim();
+              } else {
+                expressionObj.latex = f;
               }
-              return { id: `graph${i}`, latex: expr };
+
+              return expressionObj;
             });
 
           if (expressions.length === 0) {
-            expressions.push({ id: 'graph0', latex: 'y=x' });
+            expressions.push({ id: 'graph0', latex: 'y=x', isSlider: false });
           }
 
           const calculatorOptions = {
             keypad: false,
             settingsMenu: false,
-            lockViewport: true,
-            zoomButtons: false,
+            lockViewport: false,
+            zoomButtons: true,
             expressionsCollapsed: false,
             pointsOfInterest: false,
             trace: false
@@ -150,8 +161,6 @@ function parseQuizdown(text) {
               options: calculatorOptions
           };
 
-          // --- START OF PATCHED SECTION ---
-          // This is the complete, robust script that prevents adding new expressions.
           materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{
             const plotInfo = ${JSON.stringify(plotData)};
             const elt = document.getElementById(plotInfo.targetId);
@@ -160,7 +169,7 @@ function parseQuizdown(text) {
             const calculator = Desmos.GraphingCalculator(elt, plotInfo.options || {});
 
             (plotInfo.expressions || []).forEach(expr => {
-              calculator.setExpression(Object.assign({}, expr, { readonly: true }));
+              calculator.setExpression(Object.assign({}, expr, { readonly: !expr.isSlider }));
             });
 
             const allowed = new Set(calculator.getExpressions().map(e => e.id));
@@ -193,8 +202,6 @@ function parseQuizdown(text) {
             console.error('Desmos error:',e);
             document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';
           }})();<\/script></div>`;
-          // --- END OF PATCHED SECTION ---
-
         }
         return '';
       });
