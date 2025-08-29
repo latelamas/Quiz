@@ -1,25 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quizdown to HTML Converter</title>
-  <link rel="stylesheet" href="converter-styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quizdown to HTML Converter</title>
+    <link rel="stylesheet" href="converter-styles.css">
 </head>
 <body>
-
-  <h2>Quizdown Converter</h2>
-  <div class="editor-container">
-    <textarea id="quizdownCode" placeholder="Paste your quiz content here, starting with a --- header..."></textarea>
-    <textarea id="cssCode" hidden></textarea>
-    <textarea id="jsCode" hidden></textarea>
-  </div>
-  <div class="button-container">
-    <button id="runBtn" onclick="runCode()" disabled>Generate Quiz</button>
-    <button id="downloadBtn" onclick="downloadCode()">Download HTML</button>
-  </div>
-
-  <script src="converter-script.js"></script>
-
+    <div>
+        <textarea id="quizdownCode" placeholder="Enter Quizdown here..."></textarea>
+        <textarea id="cssCode" placeholder="CSS will load here..." style="display:none;"></textarea>
+        <textarea id="jsCode" placeholder="JS will load here..." style="display:none;"></textarea>
+        <textarea id="plotCode" placeholder="Plot handler will load here..." style="display:none;"></textarea>
+        <button id="runBtn" onclick="runCode()" disabled>Generate Quiz</button>
+        <button onclick="downloadCode()">Download Quiz</button>
+    </div>
+    <script src="converter-script.js"></script>
 </body>
 </html>
