@@ -1,5 +1,5 @@
 let newTab = null;
-let globalPlotData = []; // Global variable to store plot data
+let globalPlotData = [];
 
 // The main function to fetch the necessary resources for the *generated* quiz.
 async function fetchResources() {
@@ -31,7 +31,7 @@ fetchResources();
 
 function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
-  globalPlotData = []; // Reset plot data for each parse
+  globalPlotData = [];
 
   let quizTitle = "Generated Quiz";
   let questionText = text;
@@ -46,7 +46,6 @@ function parseQuizdown(text) {
         if (parts.length >= 2) {
           const key = parts[0].trim();
           const value = parts.slice(1).join(':').trim();
-          // ONLY parse title. Shuffle is now gone.
           if (key === 'title') { quizTitle = value; }
         }
       });
@@ -86,7 +85,6 @@ function parseQuizdown(text) {
       const qNum = index + 1;
       let materialsHtml = '';
 
-      // --- REGEX MODIFIED: Added plot functionality ---
       block = block.replace(/\[(code|quote|table|material|plot)(.*?)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/g, (match, type, attrs, content) => {
         content = content.trim();
         if (type === 'code') {
@@ -102,13 +100,10 @@ function parseQuizdown(text) {
             const tableHtml = `<table class="data-table"><thead><tr>${header.map(h => `<th>${applyFormatting(h)}</th>`).join('')}</tr></thead><tbody>${body.map(r => `<tr>${r.map(d => `<td>${applyFormatting(d)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
             materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
-            // Generate unique ID for each plot
             const plotId = `plot-${qNum}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            // Escape LaTeX for JavaScript string
             const escapedLatex = content.replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
             materialsHtml += `<div class="material-box"><div id="${plotId}" class="plot-container"></div></div>`;
-            // Store plot data for later initialization
-            globalPlotData.push({ id: plotId, latex: escapedLatex });
+            globalPlotData.push({ id: plotId, latex: escapedLatex, question: qNum });
         }
         return '';
       });
@@ -137,7 +132,6 @@ function parseQuizdown(text) {
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
       
-      // --- SHUFFLE MODIFIED: Always shuffles if there are options. No toggle. ---
       if (options.length > 0) {
         shuffleArray(options);
       }
@@ -175,83 +169,153 @@ function parseQuizdown(text) {
   };
 }
 
-// --- FUNCTION MODIFIED: Added Desmos initialization for plots with interactive features ---
 function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
-    // Add Desmos initialization script if there are plots
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Initialize Desmos plots
+// MathBox plotting system
 window.plotData = ${JSON.stringify(globalPlotData)};
+window.mathboxInstances = {};
+
 window.initPlots = function() {
-    if (typeof Desmos === 'undefined') {
-        console.error('Desmos API not loaded');
+    if (typeof MathBox === 'undefined') {
+        console.error('MathBox not loaded');
         return;
     }
     
     window.plotData.forEach(function(plot) {
         const container = document.getElementById(plot.id);
         if (container) {
-            // Clear any existing content
-            container.innerHTML = '';
-            container.style.width = '100%';
-            container.style.height = '300px';
-            
             try {
-                // Enable interactive features for Desmos graphs
-                const calculator = Desmos.GraphingCalculator(container, {
-                    keypad: true,
-                    expressions: true,
-                    settingsMenu: true,
-                    zoomButtons: true,
-                    expressionsTopbar: true,
-                    border: true,
-                    expressionsCollapsed: false,
-                    administerSecretFolders: false
+                // Clear container
+                container.innerHTML = '';
+                container.style.width = '100%';
+                container.style.height = '300px';
+                container.style.position = 'relative';
+                
+                // Create MathBox instance
+                const mathbox = MathBox.mathBox({
+                    plugins: ['core', 'controls', 'cursor', 'mathbox'],
+                    controls: {
+                        klass: MathBox.Controls.Orbit,
+                        speed: 2,
+                        dampening: 0.95
+                    },
+                    camera: {
+                        fov: 20,
+                        position: [0, 0, 5]
+                    },
+                    container: container
                 });
                 
-                calculator.setExpression({id: 'function', latex: plot.latex});
+                window.mathboxInstances[plot.id] = mathbox;
                 
-                // Set reasonable bounds
-                calculator.setMathBounds({
-                    left: -10,
-                    right: 10,
-                    bottom: -10,
-                    top: 10
-                });
+                const three = mathbox.three;
+                three.camera.up.set(0, 1, 0);
+                three.renderer.setClearColor(new THREE.Color(0xffffff), 1.0);
+                
+                // Create the scene
+                mathbox
+                    .cartesian({
+                        range: [[-10, 10], [-10, 10], [-10, 10]],
+                        scale: [2, 2, 1]
+                    })
+                    .axis({
+                        axis: 1,
+                        color: 0x000000,
+                        ticks: 10,
+                        lineWidth: 2,
+                        labels: true
+                    })
+                    .axis({
+                        axis: 2,
+                        color: 0x000000,
+                        ticks: 10,
+                        lineWidth: 2,
+                        labels: true
+                    })
+                    .grid({
+                        axes: [1, 2],
+                        color: 0xcccccc,
+                        lineWidth: 1
+                    });
+                
+                // Parse and plot function
+                const func = plot.latex;
+                let expr = func;
+                
+                // Simple function conversion (basic cases)
+                if (func.includes('sin')) {
+                    expr = func.replace(/\\sin/g, 'sin');
+                } else if (func.includes('cos')) {
+                    expr = func.replace(/\\cos/g, 'cos');
+                } else if (func.includes('tan')) {
+                    expr = func.replace(/\\tan/g, 'tan');
+                } else if (func.includes('^')) {
+                    expr = func.replace(/\^/g, '**');
+                }
+                
+                mathbox
+                    .fn({
+                        expr: function(emit, x) {
+                            try {
+                                // Simple function evaluation
+                                let result;
+                                if (expr.includes('x**2')) {
+                                    result = x * x;
+                                } else if (expr.includes('sin')) {
+                                    result = Math.sin(x);
+                                } else if (expr.includes('cos')) {
+                                    result = Math.cos(x);
+                                } else if (expr.includes('x**3')) {
+                                    result = x * x * x;
+                                } else {
+                                    // Default linear
+                                    result = x;
+                                }
+                                emit(x, result);
+                            } catch(e) {
+                                emit(x, 0);
+                            }
+                        },
+                        domain: [-10, 10],
+                        samples: 200,
+                        color: 0x2196f3,
+                        lineWidth: 3
+                    });
                 
             } catch (e) {
-                console.error('Error creating plot for ' + plot.id, e);
-                container.innerHTML = '<p style="color: red; text-align: center;">Error loading graph</p>';
+                console.error('Error creating MathBox plot for ' + plot.id, e);
+                container.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error loading 3D graph: ' + e.message + '</p>';
             }
         }
     });
 };
 
-// Initialize plots when page loads
+// Load MathBox and dependencies
 document.addEventListener('DOMContentLoaded', function() {
-    // Load Desmos API
-    if (typeof Desmos === 'undefined') {
-        const script = document.createElement('script');
-        script.src = 'https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6';
-        script.onload = function() {
-            setTimeout(function() {
-                if (typeof window.initPlots === 'function') window.initPlots();
-            }, 500);
+    if (typeof MathBox === 'undefined') {
+        // Load THREE.js first
+        const threeScript = document.createElement('script');
+        threeScript.src = 'https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js';
+        threeScript.onload = function() {
+            // Then load MathBox
+            const mathboxScript = document.createElement('script');
+            mathboxScript.src = 'https://cdn.jsdelivr.net/npm/mathbox@2.1.1/build/mathbox.js';
+            mathboxScript.onload = function() {
+                // Load MathBox CSS
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdn.jsdelivr.net/npm/mathbox@2.1.1/build/mathbox.css';
+                document.head.appendChild(link);
+                
+                setTimeout(function() {
+                    if (typeof window.initPlots === 'function') window.initPlots();
+                }, 500);
+            };
+            document.head.appendChild(mathboxScript);
         };
-        script.onerror = function() {
-            console.error('Failed to load Desmos API');
-            // Show error in all plot containers
-            if (window.plotData) {
-                window.plotData.forEach(function(plot) {
-                    const container = document.getElementById(plot.id);
-                    if (container) {
-                        container.innerHTML = '<p style="color: red; text-align: center;">Graph service unavailable</p>';
-                    }
-                });
-            }
-        };
-        document.head.appendChild(script);
+        document.head.appendChild(threeScript);
     } else {
         setTimeout(function() {
             if (typeof window.initPlots === 'function') window.initPlots();
@@ -273,6 +337,7 @@ document.addEventListener('DOMContentLoaded', function() {
             border: 1px solid #ddd;
             border-radius: 4px;
             margin: 10px 0;
+            background: #f8f9fa;
         }
         .material-box {
             margin: 15px 0;
@@ -286,7 +351,6 @@ document.addEventListener('DOMContentLoaded', function() {
         </body></html>`;
 }
 
-// --- FUNCTION MODIFIED: Simplified to call the new createFullHtml. ---
 function runCode() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
@@ -306,7 +370,6 @@ function runCode() {
   newTab.focus();
 }
 
-// --- FUNCTION MODIFIED: Simplified to call the new createFullHtml. ---
 function downloadCode() {
   const quizdownContent = document.getElementById("quizdownCode").value;
   const cssContent = document.getElementById("cssCode").value;
