@@ -102,7 +102,7 @@ function parseQuizdown(text) {
         } else if (type === 'plot') {
             const plotId = `plot-${qNum}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             const escapedLatex = content.replace(/\\/g, '\\\\').replace(/"/g, '&quot;');
-            materialsHtml += `<div class="material-box"><div id="${plotId}" class="plot-container"></div></div>`;
+            materialsHtml += `<div class="material-box"><div class="plot-wrapper"><div id="${plotId}" class="plot-container"></div></div></div>`;
             globalPlotData.push({ id: plotId, latex: escapedLatex, question: qNum });
         }
         return '';
@@ -377,17 +377,29 @@ document.addEventListener('DOMContentLoaded', function() {
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>
         <style>${cssContent}</style>
         <style>
-        .plot-container {
+        .plot-wrapper {
+            display: flex;
+            justify-content: center;
             width: 100%;
+        }
+        .plot-container {
+            width: 80%;
+            max-width: 600px;
             height: 300px;
             border: 1px solid #eee;
             border-radius: 4px;
-            margin: 15px 0;
+            margin: 15px auto;
             background: #fff;
             pointer-events: none;
         }
         .material-box {
             margin: 15px 0;
+        }
+        @media (max-width: 768px) {
+            .plot-container {
+                width: 95%;
+                height: 250px;
+            }
         }
         </style>
         </head>
