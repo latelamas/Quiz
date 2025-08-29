@@ -158,12 +158,16 @@ function parseQuizdown(text) {
               expressions: expressions
           };
           
-          const calculatorOptions = {
-            expressions: false, // Hides the expressions list
-            settingsMenu: false, // Hides the settings wrench
-            keypad: false, // Hides the keypad
-            lockViewport: false
-          };
+          const calculator = Desmos.GraphingCalculator(elt, {
+            expressions: false,         // Hides the expressions list
+            settingsMenu: false,        // Hides the settings menu
+            zoomButtons: false,         // Hides zoom buttons
+            showResetButtonOnLoad: false,
+            pasteGraphLink: false,
+            pasteTableData: false,
+            authorView: false,
+            trace: false,               // Optional: disable tracing
+          });
 
           materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt);plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
