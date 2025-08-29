@@ -17,7 +17,7 @@ async function fetchResources() {
     }
   };
 
-  // Note: These paths point to the files for the generated quiz, not the converter itself.
+  // --- MODIFIED: Now looks for 'script.js' and 'styles.css' ---
   await Promise.all([
     fetchFile('./script.js', "jsCode"),
     fetchFile('./styles.css', "cssCode")
@@ -242,13 +242,17 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent, plotObjects,
             const appletData = ${JSON.stringify(geogebraObjects)};
             if (typeof GGBApplet !== 'undefined') {
                 appletData.forEach(obj => {
+                    // --- MODIFIED: Using the cleaner initialization method you suggested ---
                     const params = {
-                        "appName": "classic", "showToolBar": true, "borderColor": null, "showMenuBar": false,
-                        "showAlgebraInput": true, "showResetIcon": true, "enableLabelDrags": false,
-                        "enableShiftDragZoom": true, "useBrowserForJS": true, "material_id": obj.materialId,
+                        "appName": "classic",
+                        "material_id": obj.materialId, // Correct parameter name
+                        "showToolBar": true,
+                        "showAlgebraInput": true,
+                        "showMenuBar": false,
+                        "showResetIcon": true,
                         "scaleContainerClass": "geogebra-container"
                     };
-                    const applet = new GGBApplet(params, '5.0', obj.containerId);
+                    const applet = new GGBApplet(params, true);
                     applet.inject(obj.containerId);
                 });
             }
