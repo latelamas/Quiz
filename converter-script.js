@@ -11,7 +11,6 @@ async function fetchResources() {
       fetch('script.js')
     ]);
 
-    // Check if the fetch was successful (status code 200-299)
     if (!cssResponse.ok) throw new Error(`CSS fetch failed: ${cssResponse.statusText}`);
     if (!jsResponse.ok) throw new Error(`JS fetch failed: ${jsResponse.statusText}`);
 
@@ -23,23 +22,16 @@ async function fetchResources() {
 
     runBtn.textContent = 'Generate Quiz';
     runBtn.disabled = false;
-  } catch (e)
-   {
+  } catch (e) {
     console.error('Failed to load resources:', e);
     alert('Failed to load required files (styles.css, script.js). Make sure they are in the same directory and you are running this from a web server.');
-
-    // --- THIS IS THE FIX ---
-    // Restore the button to a usable state even if loading fails.
     runBtn.textContent = 'Error - Files Not Found';
-    // Re-enable the button so the user is not stuck.
     runBtn.disabled = false;
   }
 }
 
-// Fetch external resources when the page loads
 fetchResources();
 
-// Add event listeners to the buttons
 document.addEventListener('DOMContentLoaded', () => {
     const runButton = document.getElementById('runBtn');
     const downloadButton = document.getElementById('downloadBtn');
@@ -51,11 +43,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-// --- THE NEW MULTI-LINE AWARE PARSER ---
 function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
-
   let quizTitle = "Generated Quiz";
   let questionText = text;
 
@@ -64,7 +53,6 @@ function parseQuizdown(text) {
     if (endOfHeaderIndex > 0) {
       const headerText = text.substring(4, endOfHeaderIndex);
       questionText = text.substring(endOfHeaderIndex + 5);
-
       headerText.split('\n').forEach(line => {
         const parts = line.split(':');
         if (parts.length >= 2) {
@@ -80,7 +68,6 @@ function parseQuizdown(text) {
 
   function applyFormatting(str) {
     if (!str) return '';
-
     const mathBlocks = [];
     str = str.replace(/\$\$([\s\S]*?)\$\$/g, (match, p1) => {
       const token = `@@MATH${mathBlocks.length}@@`;
@@ -92,14 +79,11 @@ function parseQuizdown(text) {
       mathBlocks.push({ token, content: `$${p1}$` });
       return token;
     });
-
     str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     str = str.replace(/_([\s\S]+?)_/g, '<i>$1</i>');
-
     mathBlocks.forEach(m => {
       str = str.replace(m.token, m.content);
     });
-
     return str;
   }
 
@@ -112,11 +96,9 @@ function parseQuizdown(text) {
   }
 
   const questionBlocks = questionText.split(/\n---\n/).filter(block => block.trim() !== '');
-
   const questionsHtml = questionBlocks.map((block, index) => {
     try {
       block = block.split('\n').filter(line => !line.trim().startsWith('//')).join('\n').trim();
-
       const qNum = index + 1;
       let materialsHtml = '';
 
@@ -137,30 +119,27 @@ function parseQuizdown(text) {
           materialsHtml += `<div class="material-box">${tableHtml}</div>`;
         } else if (type === 'plot') {
           const plotId = `plot-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-          
           const expressions = content.split('\n')
             .map(f => f.trim())
-            .filter(f => f) // Ensure empty lines are ignored
+            .filter(f => f)
             .map((f, i) => {
               let expr = f;
               if (expr.startsWith('$') && expr.endsWith('$')) {
                   expr = expr.substring(1, expr.length - 1).trim();
               }
               return { id: `graph${i}`, latex: expr };
-          });
+            });
 
           if (expressions.length === 0) {
-            expressions.push({ id: 'graph0', latex: 'y=x' }); // Default graph
+            expressions.push({ id: 'graph0', latex: 'y=x' });
           }
 
-          // --- UPDATED SECTION START ---
           const calculatorOptions = {
             keypad: false,
-            expressions: false,
             settingsMenu: false,
-            lockViewport: true,
+            lockViewport: false,
             zoomButtons: false,
-            expressionsCollapsed: true
+            expressionsCollapsed: false
           };
 
           const plotData = {
@@ -170,7 +149,6 @@ function parseQuizdown(text) {
           };
 
           materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const elt=document.getElementById(plotInfo.targetId);if(elt){const calculator=Desmos.GraphingCalculator(elt, plotInfo.options || {});plotInfo.expressions.forEach(expr=>{calculator.setExpression(expr);});}}catch(e){console.error('Desmos error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
-          // --- UPDATED SECTION END ---
         }
         return '';
       });
@@ -235,8 +213,19 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
   const plotScripts = hasPlots
     ? `<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"><\/script>`
     : '';
+
+  const desmosReadOnlyStyle = `
+    .dcg-expression-math-container .dcg-mq-root-block,
+    .dcg-expression-icon-container {
+      pointer-events: none !important;
+    }
+    .dcg-add-expression-container,
+    .dcg-edit-list-mode-toggle {
+        display: none !important;
+    }
+  `;
   
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent} ${hasPlots ? desmosReadOnlyStyle : ''}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function generateQuizHtml() {
