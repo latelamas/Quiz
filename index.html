@@ -4,18 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quizdown Converter</title>
-  <style>src="styles.css"></style>
+  <!-- Correctly link external CSS -->
+  <link rel="stylesheet" href="converter-styles.css">
 </head>
 <body>
   <div class="editor-container">
     <textarea id="quizdownCode" placeholder="Paste quizdown content here..."></textarea>
-    <textarea id="cssCode"></textarea>
-    <textarea id="jsCode"></textarea>
+    <textarea id="cssCode" placeholder="Optional CSS code..."></textarea>
+    <textarea id="jsCode" placeholder="Optional JS code..."></textarea>
   </div>
+
   <div class="buttons">
     <button id="runBtn" onclick="runCode()" disabled>Generate</button>
     <button onclick="downloadCode()">Download</button>
   </div>
-  <script src="converter.js"></script>
+
+  <!-- Correctly link external JS -->
+  <script src="converter-script.js"></script>
 </body>
 </html>
