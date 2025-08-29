@@ -35,7 +35,7 @@ function parseQuizdown(text) {
   text = text.replace(/\r\n/g, '\n');
 
   let quizTitle = "Generated Quiz";
-  let shuffleOptions = true;
+  let shuffleOptions = true; // Always true now
   let questionText = text;
 
   if (text.startsWith('---\n')) {
@@ -52,9 +52,7 @@ function parseQuizdown(text) {
           if (key === 'title') {
             quizTitle = value;
           }
-          if (key === 'shuffle') {
-            shuffleOptions = value.toLowerCase() === 'true' || value === '1';
-          }
+          // Removed shuffle option parsing - always true
         }
       });
     }
@@ -177,7 +175,7 @@ function parseQuizdown(text) {
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
 
-      if (options.length > 0 && shuffleOptions) {
+      if (options.length > 0) { // Always shuffle now
         shuffleArray(options);
       }
 
