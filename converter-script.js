@@ -23,7 +23,8 @@ async function fetchResources() {
 
     runBtn.textContent = 'Generate Quiz';
     runBtn.disabled = false;
-  } catch (e) {
+  } catch (e)
+   {
     console.error('Failed to load resources:', e);
     alert('Failed to load required files (styles.css, script.js). Make sure they are in the same directory and you are running this from a web server.');
 
@@ -156,8 +157,20 @@ function parseQuizdown(text) {
               xMax: xMax,
               functions: functionsLine.split(',').map(f => f.trim())
           };
+          
+          const sliderControls = `
+            <div class="plot-controls">
+              <div class="slider-group">
+                <label for="width-slider-${plotId}">Width:</label>
+                <input type="range" id="width-slider-${plotId}" min="300" max="1000" value="600" class="plot-slider">
+              </div>
+              <div class="slider-group">
+                <label for="height-slider-${plotId}">Height:</label>
+                <input type="range" id="height-slider-${plotId}" min="200" max="800" value="400" class="plot-slider">
+              </div>
+            </div>`;
 
-          materialsHtml += `<div class="material-box"><div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const plotDiv=document.getElementById(plotInfo.targetId);const defaultColors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f'];const calculateTraces=(min,max)=>{const n=500;const step=(max-min)/n;const x=Array.from({length:n+1},(_,i)=>min+i*step);const traces=[];plotInfo.functions.forEach((fn,i)=>{const color=defaultColors[i%defaultColors.length];let yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});const JUMP_THRESHOLD=Math.abs(max-min)*10;for(let j=1;j<yValues.length;j++){if(yValues[j-1]!==null&&yValues[j]!==null&&Math.abs(yValues[j]-yValues[j-1])>JUMP_THRESHOLD){yValues[j]=null;}}traces.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});return traces;};const initialLayout={xaxis:{range:[plotInfo.xMin,plotInfo.xMax]},yaxis:{range:[-10,10],scaleanchor:'x',scaleratio:1},dragmode:'pan',margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1},autosize:true};const config={displayModeBar:false,responsive:true};const initialTraces=calculateTraces(plotInfo.xMin,plotInfo.xMax);Plotly.newPlot(plotDiv,initialTraces,initialLayout,config);plotDiv.on('plotly_relayout',(eventData)=>{if(eventData['xaxis.range[0]']||eventData['yaxis.range[0]']){const newXMin=plotDiv.layout.xaxis.range[0];const newXMax=plotDiv.layout.xaxis.range[1];const newTraces=calculateTraces(newXMin,newXMax);Plotly.react(plotDiv,newTraces,plotDiv.layout);}});window.addEventListener('resize',()=>Plotly.Plots.resize(plotDiv));}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
+          materialsHtml += `<div class="material-box">${sliderControls}<div id="${plotId}" class="plotly-container"></div><script>(function(){try{const plotInfo=${JSON.stringify(plotData)};const plotDiv=document.getElementById(plotInfo.targetId);const defaultColors=['#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd','#8c564b','#e377c2','#7f7f7f'];const calculateTraces=(min,max)=>{const n=500;const step=(max-min)/n;const x=Array.from({length:n+1},(_,i)=>min+i*step);const traces=[];plotInfo.functions.forEach((fn,i)=>{const color=defaultColors[i%defaultColors.length];let yValues=[];const node=math.parse(fn);const code=node.compile();x.forEach(xVal=>{try{yValues.push(code.evaluate({x:xVal}));}catch(e){yValues.push(null);}});const JUMP_THRESHOLD=Math.abs(max-min)*10;for(let j=1;j<yValues.length;j++){if(yValues[j-1]!==null&&yValues[j]!==null&&Math.abs(yValues[j]-yValues[j-1])>JUMP_THRESHOLD){yValues[j]=null;}}traces.push({x:x,y:yValues,type:'scatter',mode:'lines',name:fn,line:{color:color}});});return traces;};const initialLayout={width:600,height:400,xaxis:{range:[plotInfo.xMin,plotInfo.xMax],autorange:false},yaxis:{range:[-10,10],scaleanchor:'x',scaleratio:1,autorange:false},dragmode:'pan',margin:{l:30,r:30,t:30,b:30},showlegend:true,legend:{x:1,xanchor:'right',y:1},autosize:false};const config={displayModeBar:false,responsive:true,doubleClick:false};const initialTraces=calculateTraces(plotInfo.xMin,plotInfo.xMax);Plotly.newPlot(plotDiv,initialTraces,initialLayout,config);const widthSlider=document.getElementById('width-slider-'+plotInfo.targetId);const heightSlider=document.getElementById('height-slider-'+plotInfo.targetId);widthSlider.addEventListener('input',e=>{Plotly.relayout(plotDiv,{width:parseInt(e.target.value,10)});});heightSlider.addEventListener('input',e=>{Plotly.relayout(plotDiv,{height:parseInt(e.target.value,10)});});plotDiv.on('plotly_relayout',(eventData)=>{const currentLayout=plotDiv.layout;const newXMin=currentLayout.xaxis.range[0];const newXMax=currentLayout.xaxis.range[1];const newTraces=calculateTraces(newXMin,newXMax);Plotly.react(plotDiv,newTraces,currentLayout);});window.addEventListener('resize',()=>{Plotly.Plots.resize(plotDiv);});}catch(e){console.error('Plotly error:',e);document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';}})();<\/script></div>`;
         }
         return '';
       });
