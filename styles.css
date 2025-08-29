@@ -60,30 +60,9 @@ h1 {
   margin: 0;
 }
 
-.plot-container {
+.plotly-container {
   width: 100%;
-  height: 300px;
-  border: 1px solid #dee2e6;
-  border-radius: 8px;
-  margin: 15px auto;
-  background-color: #f8f9fa;
-}
-
-.material-box:has(.plot-container) {
-  padding: 1rem;
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
-}
-
-/* Loading state */
-.plot-container:empty::before {
-  content: "Loading graph...";
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #6c757d;
-  font-style: italic;
+  min-height: 400px; /* Use min-height instead of height */
 }
 
 figure,
