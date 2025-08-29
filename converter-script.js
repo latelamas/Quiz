@@ -173,7 +173,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     let additionalScript = '';
     if (globalPlotData && globalPlotData.length > 0) {
         const plotInitScript = `
-// Plotly.js plotting system - X-axis fixed at y=0
+// Plotly.js plotting system - Smart scaling
 window.plotData = ${JSON.stringify(globalPlotData)};
 
 window.initPlots = function() {
@@ -186,12 +186,11 @@ window.initPlots = function() {
         const container = document.getElementById(plot.id);
         if (container) {
             try {
-                // Generate x values with extended range
+                // Generate x values
                 const x = [];
                 const y = [];
-                const step = 0.05;
+                const step = 0.1;
                 const generateRange = 20;
-                const visibleRange = 10;
                 
                 for (let i = -generateRange; i <= generateRange; i += step) {
                     x.push(i);
@@ -228,8 +227,8 @@ window.initPlots = function() {
                         if (result === null || result === undefined || !isFinite(result)) {
                             y.push(null);
                         } else {
-                            if (Math.abs(result) > 100) {
-                                result = result > 0 ? 100 : -100;
+                            if (Math.abs(result) > 1000) {
+                                result = result > 0 ? 1000 : -1000;
                             }
                             y.push(result);
                         }
@@ -238,14 +237,53 @@ window.initPlots = function() {
                     }
                 }
                 
-                // Filter data to visible range
+                // Filter out null values
                 const cleanX = [];
                 const cleanY = [];
                 for (let i = 0; i < x.length; i++) {
-                    if (y[i] !== null && x[i] >= -visibleRange && x[i] <= visibleRange) {
+                    if (y[i] !== null) {
                         cleanX.push(x[i]);
                         cleanY.push(y[i]);
                     }
+                }
+                
+                // Smart scaling - calculate appropriate ranges
+                let xMin = Math.min(...cleanX);
+                let xMax = Math.max(...cleanX);
+                let yMin = Math.min(...cleanY);
+                let yMax = Math.max(...cleanY);
+                
+                // Add padding
+                const xRange = xMax - xMin;
+                const yRange = yMax - yMin;
+                const xPadding = xRange * 0.1;
+                const yPadding = yRange * 0.1;
+                
+                xMin -= xPadding;
+                xMax += xPadding;
+                yMin -= yPadding;
+                yMax += yPadding;
+                
+                // Handle edge cases
+                if (xRange === 0) {
+                    xMin -= 1;
+                    xMax += 1;
+                }
+                if (yRange === 0) {
+                    yMin -= 1;
+                    yMax += 1;
+                }
+                
+                // Ensure reasonable minimum ranges
+                if (xMax - xMin < 2) {
+                    const center = (xMin + xMax) / 2;
+                    xMin = center - 1;
+                    xMax = center + 1;
+                }
+                if (yMax - yMin < 2) {
+                    const center = (yMin + yMax) / 2;
+                    yMin = center - 1;
+                    yMax = center + 1;
                 }
                 
                 // Create Plotly trace
@@ -261,7 +299,7 @@ window.initPlots = function() {
                     hoverinfo: 'none'
                 };
                 
-                // Layout with x-axis at y=0
+                // Layout with smart scaling
                 const layout = {
                     autosize: true,
                     margin: {
@@ -278,7 +316,7 @@ window.initPlots = function() {
                         gridwidth: 1,
                         zeroline: true,
                         zerolinecolor: '#333',
-                        zerolinewidth: 2,
+                        zerolinewidth: 1,
                         showline: true,
                         linecolor: '#333',
                         linewidth: 1,
@@ -288,8 +326,7 @@ window.initPlots = function() {
                             color: '#666'
                         },
                         fixedrange: true,
-                        range: [-10, 10],
-                        side: 'bottom'
+                        range: [xMin, xMax]
                     },
                     yaxis: {
                         title: 'y',
@@ -298,7 +335,7 @@ window.initPlots = function() {
                         gridwidth: 1,
                         zeroline: true,
                         zerolinecolor: '#333',
-                        zerolinewidth: 2,
+                        zerolinewidth: 1,
                         showline: true,
                         linecolor: '#333',
                         linewidth: 1,
@@ -308,8 +345,7 @@ window.initPlots = function() {
                             color: '#666'
                         },
                         fixedrange: true,
-                        range: [-10, 10],
-                        zeroline: true
+                        range: [yMin, yMax]
                     },
                     showlegend: false,
                     hovermode: false,
