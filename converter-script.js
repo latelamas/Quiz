@@ -136,7 +136,7 @@ function parseQuizdown(text) {
             xAxis: { domain: [isNaN(xMin) ? -10 : xMin, isNaN(xMax) ? 10 : xMax] },
             yAxis: { domain: [-10, 10] },
             grid: true,
-             functions.map((fn, i) => {
+            functions: functions.map((fn, i) => {
               const colors = ['blue', 'red', 'green', 'purple', 'orange', 'brown', 'pink', 'gray'];
               return {
                 fn: fn,
