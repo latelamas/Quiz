@@ -1,4 +1,5 @@
 let newTab = null;
+let isDownloading = false;
 
 async function fetchResources() {
   const runBtn = document.getElementById('runBtn');
@@ -35,14 +36,10 @@ fetchResources();
 document.addEventListener('DOMContentLoaded', () => {
     const runButton = document.getElementById('runBtn');
     const downloadButton = document.getElementById('downloadBtn');
-
     if (runButton) {
-        runButton.removeEventListener('click', runCode); // Prevent duplicates
         runButton.addEventListener('click', runCode);
     }
-
     if (downloadButton) {
-        downloadButton.removeEventListener('click', downloadCode); // Prevent duplicates
         downloadButton.addEventListener('click', downloadCode);
     }
 });
@@ -109,7 +106,7 @@ function parseQuizdown(text) {
       block = block.replace(/\[(code|quote|table|material|plot)\]\n?([\s\S]*?)\n?\[\/(?:code|quote|table|material|plot)\]/gs, (match, type, content) => {
         content = content.trim();
         if (type === 'code') {
-          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</code></pre></div>`;
+          materialsHtml += `<div class="material-box"><pre><code>${content.replace(/</g, "<").replace(/>/g, ">")}</code></pre></div>`;
         } else if (type === 'quote') {
           const parts = content.split('\n—');
           materialsHtml += `<div class="material-box"><figure><blockquote><p>${applyFormatting(parts[0].trim())}</p></blockquote>${parts[1] ? `<figcaption>— ${applyFormatting(parts[1].trim())}</figcaption>` : ''}</figure></div>`;
@@ -264,7 +261,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     ? `<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"><\/script>`
     : '';
   
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="  https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js  "><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function generateQuizHtml() {
@@ -294,8 +291,16 @@ function runCode() {
 }
 
 function downloadCode() {
+  // Prevent multiple downloads
+  if (isDownloading) return;
+  isDownloading = true;
+  
   const fullHtml = generateQuizHtml();
-  if (!fullHtml) return;
+  if (!fullHtml) {
+    isDownloading = false;
+    return;
+  }
+  
   const blob = new Blob([fullHtml], { type: "text/html" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -304,4 +309,9 @@ function downloadCode() {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(link.href);
+  
+  // Reset flag after short delay
+  setTimeout(() => {
+    isDownloading = false;
+  }, 1000);
 }
