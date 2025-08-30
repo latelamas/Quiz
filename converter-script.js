@@ -30,19 +30,20 @@ async function fetchResources() {
   }
 }
 
-fetchResources();
+let appInitialized = false;
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (appInitialized) {
+        return;
+    }
+    appInitialized = true;
+
     const runButton = document.getElementById('runBtn');
     const downloadButton = document.getElementById('downloadBtn');
-
     if (runButton) {
-        runButton.removeEventListener('click', runCode); // Prevent duplicates
         runButton.addEventListener('click', runCode);
     }
-
     if (downloadButton) {
-        downloadButton.removeEventListener('click', downloadCode); // Prevent duplicates
         downloadButton.addEventListener('click', downloadCode);
     }
 });
