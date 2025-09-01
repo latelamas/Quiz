@@ -207,9 +207,9 @@ function parseQuizdown(text) {
         } else if (line.startsWith('- [')) {
           currentSection = 'options';
           options.push({ correct: line.startsWith('- [x]'), text: applyFormatting(line.substring(5).trim()) });
-        } else if (line.startsWith('#A ')) {
+        } else if (line.startsWith('#A')) {
           currentSection = 'answer';
-          answerLines.push(line.substring(3).trim());
+          // Don't add the #A line itself, just start collecting answer lines
         } else if (currentSection === 'question') {
           questionLines.push(line);
         } else if (currentSection === 'answer') {
