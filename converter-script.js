@@ -208,9 +208,9 @@ function parseQuizdown(text) {
         if (line.startsWith('- [')) {
           currentSection = 'options';
           options.push({ correct: line.startsWith('- [x]'), text: applyFormatting(line.substring(5).trim()) });
-        } else if (line.startsWith('A:')) {
+        } else if (line.startsWith('#A ')) {
           currentSection = 'answer';
-          answerLines.push(line.substring(2).trim());
+          answerLines.push(line.substring(3).trim());
         } else if (currentSection === 'question') {
           questionLines.push(line);
         } else if (currentSection === 'answer') {
@@ -218,8 +218,8 @@ function parseQuizdown(text) {
         }
       }
 
-      if (questionLines.length > 0 && questionLines[0].trim().startsWith('Q:')) {
-        const firstLineContent = questionLines[0].trim().substring(2).trim();
+      if (questionLines.length > 0 && questionLines[0].trim().startsWith('#Q ')) {
+        const firstLineContent = questionLines[0].trim().substring(3).trim();
         if (firstLineContent) questionLines[0] = firstLineContent;
         else questionLines.shift();
       }
