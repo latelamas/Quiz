@@ -81,7 +81,7 @@ function parseQuizdown(text) {
       return token;
     });
     str = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    str = str.replace(/_([\s\S]+?)_/g, '<i>$1</i>');
+    str = str.replace(/__([\s\S]+?)__/g, '<i>$1</i>');
     mathBlocks.forEach(m => {
       str = str.replace(m.token, m.content);
     });
