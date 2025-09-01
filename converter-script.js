@@ -151,8 +151,6 @@ function parseQuizdown(text) {
               options: calculatorOptions
           };
 
-          // --- START OF PATCHED SECTION ---
-          // This is the complete, robust script that prevents adding new expressions.
           materialsHtml += `<div class="material-box"><div id="${plotId}" class="desmos-container" style="width: 100%; height: 500px;"></div><script>(function(){try{
             const plotInfo = ${JSON.stringify(plotData)};
             const elt = document.getElementById(plotInfo.targetId);
@@ -194,18 +192,19 @@ function parseQuizdown(text) {
             console.error('Desmos error:',e);
             document.getElementById('${plotId}').innerHTML='<p class="error">Invalid plot configuration.</p>';
           }})();<\/script></div>`;
-          // --- END OF PATCHED SECTION ---
-
         }
         return '';
       });
 
       const lines = block.trim().split('\n');
       const questionLines = [], options = [], answerLines = [];
-      let currentSection = 'question';
+      let currentSection = 'none'; // Start with 'none' to wait for #Q
 
       for (const line of lines) {
-        if (line.startsWith('- [')) {
+        if (line.startsWith('#Q')) {
+          currentSection = 'question';
+          // Don't add the #Q line itself, just start collecting question lines
+        } else if (line.startsWith('- [')) {
           currentSection = 'options';
           options.push({ correct: line.startsWith('- [x]'), text: applyFormatting(line.substring(5).trim()) });
         } else if (line.startsWith('#A ')) {
@@ -216,12 +215,6 @@ function parseQuizdown(text) {
         } else if (currentSection === 'answer') {
           answerLines.push(line);
         }
-      }
-
-      if (questionLines.length > 0 && questionLines[0].trim().startsWith('#Q ')) {
-        const firstLineContent = questionLines[0].trim().substring(3).trim();
-        if (firstLineContent) questionLines[0] = firstLineContent;
-        else questionLines.shift();
       }
 
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
@@ -261,7 +254,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     ? `<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"><\/script>`
     : '';
   
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="  https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js  "><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function generateQuizHtml() {
