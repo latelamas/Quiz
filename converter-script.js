@@ -1,6 +1,27 @@
 let newTab = null;
 let isDownloading = false;
 
+// Function to convert brackets and absolute values to \left\right format
+function convertToDesmosLatex(latex) {
+  if (!latex) return latex;
+  
+  // Convert absolute value bars |x| to \left|x\right|
+  // This regex looks for | that are not already preceded by \left or followed by \right
+  latex = latex.replace(/(?<!\\left)\|([^|]+?)(?<!\\right)\|/g, '\\left|$1\\right|');
+  
+  // Convert regular parentheses (x) to \left(x\right) 
+  // But avoid converting ones that are already \left( or \right)
+  latex = latex.replace(/(?<!\\left)\(([^()]+?)(?<!\\right)\)/g, '\\left($1\\right)');
+  
+  // Convert square brackets [x] to \left[x\right]
+  latex = latex.replace(/(?<!\\left)\[([^\[\]]+?)(?<!\\right)\]/g, '\\left[$1\\right]');
+  
+  // Convert curly braces {x} to \left\{x\right\}
+  latex = latex.replace(/(?<!\\left)\\{([^{}]+?)(?<!\\right)\\}/g, '\\left\\{$1\\right\\}');
+  
+  return latex;
+}
+
 async function fetchResources() {
   const runBtn = document.getElementById('runBtn');
   runBtn.textContent = 'Loading Your Files...';
@@ -13,7 +34,7 @@ async function fetchResources() {
     ]);
 
     if (!cssResponse.ok) throw new Error(`CSS fetch failed: ${cssResponse.statusText}`);
-    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${jsResponse.statusText}`);
+    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${cssResponse.statusText}`);
 
     const cssContent = await cssResponse.text();
     const jsContent = await jsResponse.text();
@@ -128,6 +149,8 @@ function parseQuizdown(text) {
               if (expr.startsWith('$') && expr.endsWith('$')) {
                   expr = expr.substring(1, expr.length - 1).trim();
               }
+              // Apply Desmos LaTeX conversion here
+              expr = convertToDesmosLatex(expr);
               return { id: `graph${i}`, latex: expr };
             });
 
@@ -254,7 +277,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     ? `<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"><\/script>`
     : '';
   
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="  https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js  "><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function generateQuizHtml() {
