@@ -13,12 +13,6 @@ function convertToDesmosLatex(latex) {
   // But avoid converting ones that are already \left( or \right)
   latex = latex.replace(/(?<!\\left)\(([^()]+?)(?<!\\right)\)/g, '\\left($1\\right)');
   
-  // Convert square brackets [x] to \left[x\right]
-  latex = latex.replace(/(?<!\\left)\[([^\[\]]+?)(?<!\\right)\]/g, '\\left[$1\\right]');
-  
-  // Convert curly braces {x} to \left\{x\right\}
-  latex = latex.replace(/(?<!\\left)\\{([^{}]+?)(?<!\\right)\\}/g, '\\left\\{$1\\right\\}');
-  
   return latex;
 }
 
