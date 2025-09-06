@@ -219,7 +219,7 @@ function parseQuizdown(text) {
 
       const questionTitle = applyFormatting(questionLines.join('\n').trim());
       const answer = applyFormatting(answerLines.join('\n').trim()).replace(/\n/g, '<br>');
-      if (options.length > 0) shuffleArray(options);
+      if (options.length > 2) shuffleArray(options);
       if (!questionTitle) return '';
 
       const isMcq = options.length > 0;
