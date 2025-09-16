@@ -1,28 +1,22 @@
-When the user requests a quiz/test/exam, output a QUIZDOWN quiz following the layout, formatting, and style of the provided template exactly, but match the number and type of questions to the user’s request. You may freely utilize and tailor different types of assignment material boxes—material, table, quote, code—when needed for the question, but never use these in the answer. Submit the quiz inside a code block; plain text submission is strictly prohibited. Use LaTeX delimiters for mathematical notation: $...$ for inline and $$...$$ for display. The user can request two question types: multiple-choice and open-ended. For multiple-choice questions, include 4–5 options. False answers must be believable, and the correct answer must not stand out in detail or length. Format the question as a single code row; for longer assignments, always use material boxes. Before finalizing, ensure everything matches the template and is production-ready and error-free.
+When the user requests a quiz/test/exam, output a QUIZDOWN quiz following the layout, formatting, and style of the provided template exactly, but match the number and type of questions to the user’s request. You may freely utilize and tailor different types of assignment material boxes—material, table, quote, code, plot—when needed for the question, but never use these in the answer. Submit the QUIZDOWN inside a code block; plain text submission is strictly prohibited. Use LaTeX delimiters for mathematical notation: $...$ for inline and $$...$$ for display. The user can request two question types: multiple-choice and open-ended. For multiple-choice questions, provide 4–5 options. Provide exactly 2 options only when the user explicitly requests a true/false format. False answers must be believable, and the correct answer must not stand out in detail or length. Format the question as a single code row; for longer assignments, always use material boxes. Before finalizing, ensure everything matches the template and is production-ready and error-free.
+
 
 +++ BELOW IS THE BASIC TEMPLATE+++
 
+
 ---
-id: concise-robust-quiz-01
-type: quiz
 title: Concise & Robust Quiz Template
 ---
-
-
-Q: 
-Calculate $EVA = \text{NOPAT} - \text{Capital} \times \text{WACC}$, given: $\text{NOPAT} = 500\,000\text{ €}$, $\text{Capital} = 2\,000\,000\text{ €}$, $\text{WACC} = 8\text{ %}$.
+#Q 
+Calculate $\text{EVA} = \text{NOPAT} - \text{Capital} \times \text{WACC}$, given: $\text{NOPAT} = 500\,000\text{ €}$, $\text{Capital} = 2\,000\,000\text{ €}$, $\text{WACC} = 8\text{ %}$.
 - [x] $340\,000\text{ €}$
 - [ ] $400\,000\text{ €}$
 - [ ] $100\,000\text{ €}$
 - [ ] $160\,000\text{ €}$
-A: 
+#A 
 EVA is calculated as: $500\,000\text{ €} - 2\,000\,000\text{ €} \times 0.08 = 500\,000\text{ €} - 160\,000\text{ €} = 340\,000\text{ €}$.
-
-
 ---
-
-
-Q: 
+#Q 
 Based on the simplified asset class summary in the table, what is the most reasonable inference?
 [table]
 | Asset Class | General Risk Profile ($\sigma^2$) | Typical Liquidity |
@@ -36,16 +30,12 @@ Based on the simplified asset class summary in the table, what is the most reaso
 - [x] Higher risk profiles are generally tied to lower liquidity.
 - [ ] Real Estate is presented as the most secure investment type.
 - [ ] There is no apparent relationship between risk and liquidity.
-A: 
+#A 
 The table shows that as the risk profile increases from Government Bonds (Low) to Venture Capital (Very High), the typical liquidity decreases from High to Very Low. This suggests an inverse relationship where higher risk is associated with lower liquidity.
-
-
 ---
-
-
-Q: 
+#Q 
 Prove that $\sqrt{2}$ is irrational.
-A:
+#A
 Assume $\sqrt{2}$ is rational, i.e., $\sqrt{2} = \frac{a}{b}$ where $a, b \in \mathbb{Z}$ with no common factors and $b \ne 0$.
 Then,
 $$2 = \frac{a^2}{b^2} \Rightarrow a^2 = 2b^2$$
@@ -55,12 +45,8 @@ $$(2k)^2 = 2b^2 \Rightarrow 4k^2 = 2b^2 \Rightarrow b^2 = 2k^2$$
 So $b^2$ is even, implying $b$ is even.
 But then both $a$ and $b$ are even, contradicting the assumption.
 Therefore, $\sqrt{2}$ is irrational.
-
-
 ---
-
-
-Q: 
+#Q 
 Analyze the provided materials, which include a historical quote, a description of this quiz template's purpose, and a JavaScript code snippet of a `function`. Discuss their individual significance and how they relate to the broader context of information presentation and technical communication.
 
 
@@ -84,7 +70,7 @@ function calculate(x, y) {
 [/code]
 
 
-A:
+#A
 The Neil Armstrong quote, uttered on July 20, 1969, is historically significant as it encapsulates the profound impact of the Apollo 11 mission. It articulates the dual nature of the event: a personal achievement and a monumental advancement for humanity, symbolizing exploration, innovation, and Cold War era technological superiority.
 
 
@@ -96,26 +82,57 @@ The third material presents a JavaScript code snippet. In a technical assessment
 
 All three examples demonstrate different forms of information and the importance of appropriate presentation. Presenting them in separate, distinct material boxes within the same question allows for clear visual separation of distinct data points while still framing them under a common analytical task. This visual organization enhances readability and comprehension, particularly when dealing with varied or extensive source materials that require specific display conventions. Similarly, long mathematical formulas are automatically wrapped in a scrolling container to prevent overflow on any screen.
 $$P(x) = x^{20} + 3x^{19} - 2x^{18} + 5x^{17} + x^{16} - 7x^{15} + 4x^{14} + 2x^{13} - 8x^{12} + 6x^{11} + x^{10} - 9x^9 + 3x^8 - 5x^7 + 2x^6 - 10x^5 + 7x^4 + 3x^3 - 6x^2 + x + 100$$
-Any text, that is not math or code, can be **bolded** only with **double** asterisks and _italicized_ with only _single_ underscores. NEVER BOLD OR ITALICIZE MATH.
+Any text, that is not math or code, can be **bolded** only with **double** asterisks and *italicized* with only *single* asterisks. NEVER BOLD OR ITALICIZE MATH.
+---
+#Q
+This single, interactive graph is a showcase of the Desmos engine's power and versatility.
+
+
+[plot]
+$f(x) = \frac{1}{4}x^3 - 2x + \sin(x)$
+$f'(x)$
+$a=1$
+$(a, f(a))$
+$y-f(a)=f'(a)(x-a)$
+$x^2+y^2 < 9$
+$r = 2+2\cos(\theta)$
+[/plot]
+#A
+This plot demonstrates a wide range of features working together. Here is a guided tour of what you're seeing:
+
+
+- **Calculus in Action:** The primary function is $f(x) = \frac{1}{4}x^3 - 2x + \sin(x)$. Its derivative, $f'(x)$, is also plotted, showing the slope of $f(x)$.
+
+
+- **Interactive Tangent Line:** The slider for the variable $a$ controls the position of the point $(a, f(a))$ on the curve. The line $y-f(a)=f’(a)(x-a)$ is the equation of the tangent line to $f(x)$ at that exact point. **Try dragging the slider for $a$** to see the tangent line move dynamically.
+
+
+- **Inequalities and Shading:** The expression $x^2+y^2 < 9$ creates a shaded circle with a radius of $3$, demonstrating how Desmos visualizes the solution set for an inequality.
+
+
+- **Polar Graphing:** The equation $r = 2+2\cos(\theta)$ is plotted in polar coordinates, creating the elegant heart-shaped curve known as a cardioid, which coexists seamlessly with the other Cartesian plots.
 +++ NOW FOLLOWS SOME GOLD STANDARD QUIZZES FOR FURTHER REFERENCE, This is Math +++
 
+
 ---
-id: riemann-hypothesis-comprehensive
-type: quiz
 title: Riemann Hypothesis Deep Dive: Theory, Evidence & Implications
 ---
 
-Q: 
+
+#Q 
 Formulate the Riemann Hypothesis using the Riemann zeta function $\zeta(s)$, explain its connection to prime number distribution, and calculate the exact value of $\zeta(2)$ using Euler's product formula. Include all critical components: analytic continuation, non-trivial zeros, and the significance of the critical line $\text{Re}(s) = \frac{1}{2}$.
+
 
 [quote]
 "Mathematics is the queen of the sciences, and number theory is the queen of mathematics."
 — Carl Friedrich Gauss
 [/quote]
 
+
 [material]
 The Riemann zeta function $\zeta(s)$ is initially defined for $\text{Re}(s) > 1$ as an infinite series. Through complex analysis techniques, it can be extended to other regions of the complex plane. This function has certain points where its value equals zero, which are categorized into two types. The distribution of prime numbers shows surprising connections to the behavior of this function. Leonhard Euler discovered a remarkable relationship between this function and prime numbers in the 18th century.
 [/material]
+
 
 [code]
 # Python snippet for zeta function approximation
@@ -123,36 +140,45 @@ import math
 def zeta_approx(s, terms=1000):
     return sum(1/(n**s) for n in range(1, terms+1))
 
+
 # Example: zeta_approx(2, 1000) ≈ 1.64393...
 [/code]
 
-A:
+
+#A
 The Riemann zeta function $\zeta(s)$ is initially defined for $\operatorname{Re}(s)>1$ by $\displaystyle \zeta(s)=\sum_{n=1}^\infty n^{-s}$. It admits a meromorphic continuation to the whole complex plane with a simple pole at $s=1$. The trivial zeros occur at the negative even integers $s=-2,-4,\dots$; all other zeros are called non-trivial zeros and lie in the critical strip $0<\operatorname{Re}(s)<1$. The Riemann Hypothesis asserts that every non-trivial zero satisfies $\operatorname{Re}(s)=\tfrac12$.
+
 
 This hypothesis is deeply connected to prime distribution through Euler's product formula: $\zeta(s) = \prod_{p \text{ prime}} \frac{1}{1 - p^{-s}}$ for $\operatorname{Re}(s) > 1$. Taking logarithms yields $\ln \zeta(s) = \sum_p \sum_{k=1}^{\infty} \frac{1}{k p^{ks}}$, linking $\zeta(s)$ to prime counting. The explicit formula for $\psi(x) = \sum_{n \leq x} \Lambda(n)$ (where $\Lambda$ is the von Mangoldt function) is:
 $$\psi(x) = x - \sum_{\rho} \frac{x^{\rho}}{\rho} - \ln(2\pi) - \frac{1}{2} \ln(1 - x^{-2})$$
 where $\rho$ ranges over non-trivial zeros. If RH holds, the error term $\left| \psi(x) - x \right|$ is bounded by $O(\sqrt{x} \ln^2 x)$.
 
+
 For $\zeta(2)$, Euler's product gives:
 $$\zeta(2) = \prod_{p} \frac{1}{1 - p^{-2}} = \left( \frac{1}{1 - 2^{-2}} \right) \left( \frac{1}{1 - 3^{-2}} \right) \left( \frac{1}{1 - 5^{-2}} \right) \cdots$$
 Evaluating the infinite product or using Fourier series, $\zeta(2) = \frac{\pi^2}{6} \approx 1.644934$.
 
+
 Current evidence includes verification of over $10^{13}$ non-trivial zeros on the critical line, but no general proof. RH remains one of the Clay Mathematics Institute's Millennium Prize Problems.
+
 
 ---
 
-Q: 
+
+#Q 
 Which statement accurately reflects the current status of numerical verification for the Riemann Hypothesis?
 - [x] Over $10^{13}$ non-trivial zeros have been confirmed to lie on the critical line $\text{Re}(s) = \frac{1}{2}$, with no counterexamples found.
 - [ ] All zeros up to height $t = 10^{100}$ have been verified, proving the hypothesis for practical cryptographic applications.
 - [ ] Approximately $10^9$ zeros were checked in 2001, but computational limits prevent further verification beyond $t = 10^{12}$.
 - [ ] Verification has only been completed for the first $10^6$ zeros, leaving the hypothesis largely untested for large $|t|$.
-A: 
+#A 
 As of 2024, extensive computations by Gourdon (2004) and Platt-Trudgian (2020) confirm the first $10^{13}$ non-trivial zeros lie on the critical line, with no violations detected. The highest verified zero has imaginary part $t \approx 8.17 \times 10^{12}$. Computational methods like the Riemann-Siegel formula and Odlyzko-Schönhage algorithm enable efficient high-$t$ calculations. No proof exists for all zeros, and verification beyond $10^{13}$ remains ongoing but faces exponential computational complexity.
+
 
 ---
 
-Q: 
+
+#Q 
 Calculate the exact value of $\zeta(0)$ using the functional equation of the Riemann zeta function. Given the functional equation:
 $$\zeta(s) = 2^s \pi^{s-1} \sin\left(\frac{\pi s}{2}\right) \Gamma(1-s) \zeta(1-s)$$
 - [x] $-\frac{1}{2}$
@@ -160,7 +186,7 @@ $$\zeta(s) = 2^s \pi^{s-1} \sin\left(\frac{\pi s}{2}\right) \Gamma(1-s) \zeta(1-
 - [ ] $1$
 - [ ] $\frac{1}{2}$
 - [ ] Undefined
-A: 
+#A 
 Substitute $s = 0$ into the functional equation:
 $$\zeta(0) = 2^0 \pi^{-1} \sin(0) \Gamma(1) \zeta(1)$$
 Since $\sin(0) = 0$ and $\zeta(1)$ diverges, direct substitution fails. Instead, use the analytic continuation. For $s = -2k$ ($k \in \mathbb{N}$), $\zeta(-2k) = 0$ (trivial zeros). For $s = 0$, consider the limit as $s \to 0^+$:
@@ -169,10 +195,13 @@ By functional equation symmetry and known value $\zeta(0) = -\frac{1}{2}$ from r
 $$\zeta(0) = \frac{2}{2\pi} \cos(0) \Gamma(1) \zeta(1) \quad \text{(invalid due to } \zeta(1)\text{ pole)}$$
 Correct approach: The functional equation implies $\zeta(s)$ has a simple pole at $s=1$ with residue 1, and $\zeta(0) = -\frac{1}{2}$ is a standard result from the meromorphic continuation.
 
+
 ---
 
-Q: 
+
+#Q 
 Analyze the relationship between the Riemann Hypothesis and the Mertens function $M(x) = \sum_{n \leq x} \mu(n)$, where $\mu(n)$ is the Möbius function. Discuss the implications of RH on $M(x)$ and evaluate the truth of the statement: "RH implies $M(x) = O(x^{1/2 + \epsilon})$ for all $\epsilon > 0$."
+
 
 [table]
 | Concept | Definition | RH Implication |
@@ -183,32 +212,40 @@ Analyze the relationship between the Riemann Hypothesis and the Mertens function
 | Known unconditional bound | $M(x) = O\left(x \exp\left(-c \frac{(\ln x)^{3/5}}{(\ln \ln x)^{1/5}}\right)\right)$ | Weaker than RH prediction |
 [/table]
 
-A:
+
+#A
 The Mertens function $M(x) = \sum_{n \leq x} \mu(n)$ is intrinsically linked to the Riemann zeta function via the identity $\frac{1}{\zeta(s)} = \sum_{n=1}^{\infty} \frac{\mu(n)}{n^s}$ for $\operatorname{Re}(s) > 1$. The Riemann Hypothesis (RH) implies that all non-trivial zeros of $\zeta(s)$ lie on $\operatorname{Re}(s) = \frac{1}{2}$, which directly affects the growth rate of $M(x)$.
 
+
 Specifically, RH is equivalent to the statement that $M(x) = O(x^{1/2 + \epsilon})$ for every $\epsilon > 0$. This means that for any $\epsilon > 0$, there exists a constant $C_\epsilon > 0$ such that $|M(x)| \leq C_\epsilon x^{1/2 + \epsilon}$ for all sufficiently large $x$. The exponent $\frac{1}{2} + \epsilon$ is optimal—if RH fails, the best possible bound would be worse (e.g., $O(x^{\sigma})$ where $\sigma > \frac{1}{2}$ is the supremum of real parts of zeros).
+
 
 The equivalence arises from Perron's formula and contour integration: 
 $$M(x) = \frac{1}{2\pi i} \int_{c - i\infty}^{c + i\infty} \frac{x^s}{s \zeta(s)}  ds \quad (c > 1)$$
 Shifting the contour left past the critical line, the error term depends on the zero-free region. If all zeros satisfy $\operatorname{Re}(s) \leq \frac{1}{2}$, the integral yields $M(x) = O(x^{1/2 + \epsilon})$.
 
+
 Unconditionally (without RH), the best bound is $M(x) = O\left(x \exp\left(-c (\ln x)^{3/5} (\ln \ln x)^{-1/5}\right)\right)$ (Walfisz, 1963), which grows faster than any $x^{1/2 + \epsilon}$. Numerical evidence shows $|M(x)| < \sqrt{x}$ for $x < 10^{16}$, but this fails infinitely often (Odlyzko & te Riele, 1985). Thus, the statement "RH implies $M(x) = O(x^{1/2 + \epsilon})$ for all $\epsilon > 0$" is **true** and is a well-established equivalence in analytic number theory.
 +++ Below an Example of History Essays with Material +++
 ---
-id: iraq-war-historical-analysis-01
-type: quiz
 title: The Iraq War - A Historical Analysis
 ---
 
 
-Q: 
+
+
+#Q 
 Analyze the primary justifications for the 2003 invasion of Iraq as presented by the U.S. government, contrasted with the findings of UN weapons inspectors. Using the provided quote and table, discuss the controversy and accuracy of the pre-war intelligence.
+
+
 
 
 [quote]
 "My colleagues, every statement I make today is backed up by sources, solid sources. These are not assertions. What we're giving you are facts and conclusions based on solid intelligence."
 — U.S. Secretary of State Colin Powell, Address to the UN Security Council, February 5, 2003.
 [/quote]
+
+
 
 
 [table]
@@ -219,17 +256,26 @@ Analyze the primary justifications for the 2003 invasion of Iraq as presented by
 [/table]
 
 
-A:
+
+
+#A
 The primary justifications for the 2003 invasion of Iraq, articulated by the George W. Bush administration, were that Saddam Hussein's regime possessed weapons of mass destruction (WMDs) and had ties to terrorist organizations like al-Qaeda, presenting an imminent threat to the United States and global security. These claims were forcefully presented to the international community, most notably in Secretary of State Colin Powell's February 2003 address to the UN Security Council, where he asserted the intelligence was based on "facts and conclusions." The administration argued that Iraq was actively producing chemical and biological weapons and seeking nuclear capabilities, thereby violating UN Security Council resolutions.
 
+
 However, these justifications stood in stark contrast to the findings of UN weapons inspectors. The final pre-invasion inspections conducted by UNMOVIC and the IAEA between November 2002 and March 2003 found no conclusive evidence of active WMD programs. Inspectors reported that while they visited hundreds of sites, Iraq’s cooperation was uneven, with access delayed or restricted at certain facilities and key disarmament questions remaining unresolved. This contradicted the certainty expressed by U.S. officials. After the invasion, the Iraq Survey Group, a U.S.-led fact-finding mission, concluded that while Saddam Hussein intended to reconstitute WMD programs, no stockpiles existed at the time of the invasion, which ultimately revealed a significant pre-war intelligence failure. The discrepancy between the administration's claims and the on-the-ground reality fueled a major international controversy over the legality and necessity of the war.
+
+
 
 
 ---
 
 
-Q: 
+
+
+#Q 
 Examine the nature of the conflict in Iraq following the 2003 invasion, particularly the rise of the insurgency and sectarian violence. Using the provided materials, analyze how post-invasion policies and evolving casualty trends reflect the complex dynamics of the occupation and its consequences for the Iraqi people.
+
+
 
 
 [material]
@@ -237,6 +283,8 @@ Examine the nature of the conflict in Iraq following the 2003 invasion, particul
 - **De-Ba'athification:** In May 2003, the Coalition Provisional Authority (CPA) issued Order 1, banning high-ranking members of Saddam Hussein's Ba'ath Party from public sector employment. This policy aimed to purge the government of the former regime's influence.
 - **Dismantling the Iraqi Army:** CPA Order 2, also issued in May 2003, formally disbanded the Iraqi military, security, and intelligence infrastructure, leaving hundreds of thousands of soldiers and officers unemployed.
 [/material]
+
+
 
 
 [table]
@@ -252,25 +300,38 @@ Examine the nature of the conflict in Iraq following the 2003 invasion, particul
 
 
 
-A:
+
+
+
+#A
 Following the swift military victory of the U.S.-led coalition in 2003, Iraq did not transition to stability but instead descended into a prolonged and brutal conflict characterized by a multi-faceted insurgency and devastating sectarian violence. The data illustrates a dramatic escalation in both U.S. and Iraqi fatalities, peaking between 2004 and 2007, which reflects the deepening chaos.
+
 
 Key post-invasion policies implemented by the Coalition Provisional Authority (CPA) are widely seen as having contributed to the instability. The policy of De-Ba'athification, while intended to cleanse the state of the former regime's influence, stripped the government of experienced technocrats and alienated a significant portion of the Sunni Arab population. Simultaneously, the decision to disband the Iraqi army left hundreds of thousands of trained military personnel unemployed and disaffected, creating a large pool of recruits for insurgent groups. These policies created a power vacuum and fueled grievances that insurgents exploited.
 
+
 The insurgency was complex, comprising Sunni nationalists, former Ba'athists, and foreign jihadists like al-Qaeda in Iraq. Their attacks targeted coalition forces and the nascent Iraqi government. The conflict transformed into a full-blown sectarian civil war following the February 2006 bombing of the revered Shi'a al-Askari Mosque in Samarra. This event unleashed a wave of retaliatory killings between Sunni and Shi'a militias, causing Iraqi civilian deaths to skyrocket to their highest levels, as shown in the table for 2006-2007. The U.S. "Surge" in 2007, combined with the "Anbar Awakening" where Sunni tribes allied with U.S. forces against extremists, eventually led to a significant, though not total, reduction in violence by 2008.
+
+
 
 
 ---
 
 
-Q:
+
+
+#Q
 Evaluate the long-term geopolitical and domestic consequences of the Iraq War. Using the provided quote and material, discuss the war's impact on regional stability, Iraq's internal political and social structure, and the international standing of the United States.
+
+
 
 
 [quote]
 "The 2003 U.S. invasion of Iraq and its aftermath have arguably been the most pivotal events in the Middle East region since the end of the Cold War... the strategic implications of this war and its aftermath have already affected the broader region."
-— RAND Corporation Report, _The Iraq Effect_, 2010.
+— RAND Corporation Report, *The Iraq Effect*, 2010.
 [/quote]
+
+
 
 
 [material]
@@ -282,53 +343,52 @@ Evaluate the long-term geopolitical and domestic consequences of the Iraq War. U
 [/material]
 
 
-A:
+
+
+#A
 The long-term consequences of the Iraq War have been profound and far-reaching, fundamentally reshaping the geopolitical landscape of the Middle East and leaving a lasting, complex legacy within Iraq itself.
+
 
 Geopolitically, the war triggered a major shift in the regional balance of power. The ousting of Saddam Hussein's regime removed a key strategic counterweight to Iran. This empowered Iran, allowing it to exert unprecedented influence in Iraq through political and military proxies, thereby extending its reach across the region and alarming traditional U.S. allies like Saudi Arabia. The ensuing power vacuum and state collapse in parts of Iraq also created a breeding ground for transnational extremist groups. Al-Qaeda in Iraq morphed into ISIS, which in 2014 established a "caliphate" spanning Iraq and Syria, destabilizing the entire region and prompting renewed international military intervention.
 
+
 Domestically, Iraq continues to grapple with the war's devastating aftermath. The conflict and subsequent sectarian violence led to immense human suffering, with hundreds of thousands of deaths and millions displaced. The new political system, organized along ethno-sectarian lines, has institutionalized divisions, undermined national unity, and contributed to persistent corruption and instability. The economy and infrastructure, shattered by years of sanctions and war, have struggled to recover, impeding the provision of basic services to the population.
 
+
 For the United States, the war had significant consequences. The failure to find WMDs severely damaged its international credibility, and the immense financial and human cost strained its military and economy. The difficult occupation and the rise of ISIS led to a prolonged debate within the U.S. about the efficacy and limits of military intervention in foreign policy.
-+++ Below an Example of Different kinds of assignments +++
++++ Below an Example of Different Kinds of Assignments +++
 ---
-id: advanced-cross-disciplinary-exam-01
-type: quiz
 title: Advanced Interdisciplinary Exam: Statistics, Coding, History, and Ethics
 ---
 
 
 
-Q: 
+
+
+
+#Q 
 Which of the following best describes the relationship shown in the scatter plot?
-[code]
-  Y ^
-    |
-10 -|      o       o
-    |  o     
- 8 -|            o      o
-    |    o  
- 6 -| o         o
-    |      o      
- 4 -|          o      o
-    | o      
- 2 -|    o   o       
-    |
-  0 +-------------------> X
-    0   2   4   6   8  10
-[/code]
-- [ ] Strong positive linear correlation
+[plot]
+$X = [1, 2, 2, 3, 4, 5, 6, 7, 8, 9]$
+$Y = [6, 2, 8, 4, 8, 2, 10, 4, 10, 8]$
+$A=(X,Y)$
+[/plot]
+- [ ] Extremely positive linear correlation
 - [x] No clear linear correlation
-- [ ] Strong negative linear correlation
+- [ ] Extremely negative linear correlation
 - [ ] Perfect linear correlation
-A:
+#A
 The points in the scatter plot do not form any visible linear pattern, appearing randomly scattered. This indicates that there is no significant linear correlation between the variables $X$ and $Y$.
+
+
 
 
 ---
 
 
-Q: 
+
+
+#Q 
 What is the result of executing the following R code snippet?
 [code]
 x <- c(10, 20, 30)
@@ -340,19 +400,24 @@ if (x > 15) {
 - [x] It throws an error and stops execution.
 - [ ] It prints nothing but issues a warning.
 - [ ] It prints "Greater" once for the first true condition.
-A:
+#A
 The condition `x > 15` evaluates to the logical vector `c(FALSE, TRUE, TRUE)`. The `if` statement in R requires a single logical value (a vector of length one) to make a decision. Since the condition has a length of 3, R cannot proceed and halts execution with a fatal error: `the condition has length > 1`.
+
+
 
 
 ---
 
 
-Q:
+
+
+#Q
 What is the output of the following Python code snippet?
 [code]
 def f(i, x=[]):
     x.append(i)
     return x
+
 
 print(f(1))
 print(f(2))
@@ -361,25 +426,33 @@ print(f(2))
 - [x] It prints `[1]`, then `[1, 2]`.
 - [ ] It prints `[1, 2]`, then `[1, 2]`.
 - [ ] It prints `[1]`, then `[]`.
-A:
+#A
 In Python, default arguments for functions are evaluated only once, when the function is defined. Because the default argument `x` is a mutable list, the same list object is used across all calls to `f` that don't provide a second argument. The first call, `f(1)`, appends `1` to this shared list and prints `[1]`. The second call, `f(2)`, appends `2` to the *same* list and prints `[1, 2]`.
 
 
+
+
 ---
 
 
-Q: 
+
+
+#Q 
 Consider the context of **MiG Alley** during the Korean War. If Soviet pilots had not participated in MiG-15 engagements, how might the outcome of air battles have been different? Discuss factors like pilot skill, aircraft performance, and strategic implications.
-A:
+#A
 The absence of Soviet pilots would have dramatically altered the air war over Korea. UN forces, primarily flying the F-86 Sabre, would have faced North Korean and Chinese pilots with significantly less combat experience and training. While the MiG-15 was a formidable aircraft, its effectiveness was largely due to the skill of the veteran Soviet pilots flying them. Without these pilots, UN air superiority would likely have been achieved much more quickly and decisively. Attrition rates for UN aircraft would have been lower, while losses for the communist forces would have been higher. This dominance would have had strategic implications, allowing UN ground-attack aircraft to operate with greater freedom and potentially altering the course of the ground war.
 
 
+
+
 ---
 
 
-Q:
+
+
+#Q
 For the simple linear regression model $y_i = \beta_0 + \beta_1 x_i + \epsilon_i$, derive the least-squares estimate of the slope $\hat{\beta}_1$ by minimizing the sum of squared residuals.
-A:
+#A
 The objective is to minimize the sum of squared residuals (SSR), $S(\beta_0, \beta_1) = \sum_{i=1}^{n} (y_i - \beta_0 - \beta_1 x_i)^2$. To find the minimum, we take the partial derivatives with respect to $\beta_0$ and $\beta_1$ and set them to zero.
 $$
 \frac{\partial S}{\partial \beta_0} = -2 \sum (y_i - \beta_0 - \beta_1 x_i) = 0 \implies \sum y_i - n\beta_0 - \beta_1 \sum x_i = 0
@@ -393,22 +466,29 @@ $$
 $$
 
 
+
+
 ---
 
 
-Q:
+
+
+#Q
 Which statement about a p-value is correct?
 - [ ] It is the probability that the alternative hypothesis is true.
 - [ ] It is the probability that the observed data occurred by random chance.
 - [x] It is the probability of observing data at least as extreme as that observed, assuming the null hypothesis is true.
 - [ ] It is the probability that the null hypothesis is false.
-A:
+#A
 The p-value is a measure of statistical significance. By definition, it is the probability of obtaining test results at least as extreme as the results actually observed, under the assumption that the null hypothesis is correct. A small p-value (typically ≤ 0.05) indicates strong evidence against the null hypothesis.
+
 
 ---
 
 
-Q:
+
+
+#Q
 How should an analyst treat the following claim, presented without its original context?
 [quote]
 "It generally overestimates costs, underestimates benefits and is better suited to incremental changes than the system-wide transformation needed to address climate change."
@@ -417,31 +497,39 @@ How should an analyst treat the following claim, presented without its original 
 - [ ] Interpret the claim as an argument for immediate policy action.
 - [x] Verify the assertion by checking the original source's evidence.
 - [ ] Use the quote to argue that all quantitative analysis is flawed.
-A:
+#A
 An excerpt presented without its source or supporting data is merely an assertion, not evidence. The core principle of critical analysis is to verify claims by examining the original context, methodology, and data. Accepting the claim, reinterpreting its intent, or over-generalizing from it are all methodologically unsound approaches.
+
+
 
 
 ---
 
 
-Q:
+
+
+#Q
 A healthcare intervention yields 2 Quality-Adjusted Life Years (QALYs) at a cost of \$100,000. The established cost-effectiveness threshold is \$50,000 per QALY. Which ethical perspective would critique a decision to reject the intervention solely based on exceeding this threshold?
 - [ ] Utilitarianism, because the cost per QALY is exactly at the threshold.
 - [ ] Paternalism, which would reject the intervention to protect patients.
 - [ ] Libertarianism, where only an individual's willingness to pay matters.
 - [x] Egalitarianism, which may advocate for intervention if it addresses a severe need or promotes health equity.
-A:
-The cost per QALY is $ \$100,000 / 2 = \$50,000 $, which meets the threshold, but the question asks for a critique of _rejecting_ it. Assuming the premise means the intervention is _marginally_ not cost-effective or that the threshold is strict, an egalitarian perspective would argue that factors beyond simple cost-effectiveness, such as fairness, the severity of the condition being treated, or rectifying health inequities, should be considered. This view critiques purely utilitarian calculations that might disadvantage certain populations.
+#A
+The cost per QALY is $ \$100,000 / 2 = \$50,000 $, which meets the threshold, but the question asks for a critique of *rejecting* it. Assuming the premise means the intervention is *marginally* not cost-effective or that the threshold is strict, an egalitarian perspective would argue that factors beyond simple cost-effectiveness, such as fairness, the severity of the condition being treated, or rectifying health inequities, should be considered. This view critiques purely utilitarian calculations that might disadvantage certain populations.
+
+
 
 
 ---
 
 
-Q:
+
+
+#Q
 Analyze the provided quote and determine the output of the Python code.
 [quote]
 "The code should be its own best documentation."
-— Steve McConnell in his book _Code Complete_
+— Steve McConnell in his book *Code Complete*
 [/quote]
 [code]
 def parse(text):
@@ -451,22 +539,27 @@ def parse(text):
             res.append(int(text[i]))
     return sum(res)
 
+
 print(parse("abc123"))
 [/code]
 - [x] It extracts all digits from the string and returns their sum (output: 6).
 - [ ] It counts the number of digits in the string (output: 3).
 - [ ] It returns the sum of the ASCII values of the digits.
 - [ ] It raises an error because the initial list is empty.
-A:
+#A
 The function iterates through the input string "abc123". It uses the `.isdigit()` method to identify characters that are digits ('1', '2', '3'). It converts these characters to integers (`1`, `2`, `3`), appends them to a list `res`, and finally returns the sum of the elements in the list, which is $1 + 2 + 3 = 6$.
+
+
 
 
 ---
 
 
-Q:
+
+
+#Q
 Derive the maximum efficiency $\eta_{\text{Carnot}}$ of a reversible Carnot engine operating between a hot reservoir at temperature $T_H$ and a cold reservoir at temperature $T_C$.
-A:
+#A
 The efficiency $\eta$ of any heat engine is defined as the ratio of the work done, $W$, to the heat absorbed from the hot reservoir, $Q_H$.
 $$ \eta = \frac{W}{Q_H} $$
 From the first law of thermodynamics, $W = Q_H - Q_C$, where $Q_C$ is the heat rejected to the cold reservoir.
@@ -476,3 +569,198 @@ $$ \frac{Q_C}{Q_H} = \frac{T_C}{T_H} $$
 Substituting this into the efficiency equation gives the Carnot efficiency:
 $$ \eta_{\text{Carnot}} = 1 - \frac{T_C}{T_H} $$
 This represents the maximum possible efficiency for any heat engine operating between these two temperatures.
+
+
++++ Below Comprehensive Examples of Desmos Plots +++
+---
+title: The Definitive Desmos Plotting Gallery
+---
+
+
+#Q 
+**A Gallery of Foundational Functions**
+
+
+[plot]
+$x$
+$x^2$
+$x^3-x$
+$\sqrt{x}$
+$\sqrt[3]{x}$
+$\left|x\right|$
+$\sin(x)$
+$\cos(x)$
+$\tan(x)$
+$e^x$
+$\ln(x)$
+[/plot]
+#A
+This single, comprehensive plot showcases a wide variety of fundamental function types. It includes polynomials, root and absolute value functions, trigonometric waves (with correct asymptote rendering for $\tan(x)$), and the inverse relationship between the exponential ($e^x$) and logarithmic ($\ln(x)$) functions, which are reflected across the line $y=x$.
+
+
+---
+
+
+#Q 
+**The single-line piecewise function.**
+
+
+[plot]
+$f(x)=\left\{x<0:-x+2,\ x\ge0:\sqrt{x}+2\ \right\}$
+[/plot]
+#A
+This powerful single-line syntax allows for the definition of a function with multiple conditions. Here, the function follows a linear rule for $x<0$ and a square root rule for $x \ge 0$, creating a sharp corner at the transition point.
+
+
+---
+
+
+#Q
+**Visualizing a region defined by multiple inequalities.**
+
+
+[plot]
+$y > \sinh(x)$
+$x^2+y^2 < 25$
+$y>\sinh(x)\left\{x^{2}+y^{2}<25\right\}$
+[/plot]
+#A
+The shaded regions represent the solution sets for $y > \sinh(x)$ and $x^2+y^2 < 25$. The third expression is a clever Desmos technique to shade *only* the intersection of these two regions, visualizing the area that is simultaneously inside a circle of radius $r=5$ and above the sine wave.
+
+
+---
+
+
+#Q 
+**A Gallery of Advanced & Implicit Curves**
+
+
+[plot]
+$x^2+y^2=16$
+$(x^2+y^2)^2=2(x^2-y^2)$
+$r = 2 - 2\sin(\theta)$
+$r = 5\cos(4\theta)$
+[/plot]
+#A
+This plot showcases Desmos's power in rendering complex curves. It includes a perfect circle and a Lemniscate of Bernoulli (plotted with implicit equations), alongside a polar cardioid and an 8-petaled rose curve (plotted in polar coordinates).
+
+
+---
+
+
+#Q 
+**Interactive Sliders for Transformations**
+
+
+[plot]
+$y=A\left(x-h\right)^{2}+k$
+$A=1$
+$h=2$
+$k=-3$
+$b=1$
+$\sin(bx)$
+[/plot]
+#A
+By defining variables, Desmos creates interactive sliders. The top expressions demonstrate the vertex form of a parabola, where you can drag the sliders for $A$, $h$, and $k$ to control its stretch and position. The bottom expressions allow you to animate the frequency of the sine wave by pressing the play icon next to the slider for $b$.
+
+
+---
+
+
+#Q
+**An interactive tangent line to a curve.**
+
+
+[plot]
+$f(x)=x^2$
+$f’(x)$
+$a=1$
+$y-f(a) = f'(a)(x-a)$
+$(a, f(a))$
+[/plot]
+#A
+This plot provides a stunning visualization of a derivative. It graphs a function, its derivative $f’(a)$, a point $(a, f(a))$ on that function controlled by the slider $a$, and the true tangent line at that point, utilizing its automatically calculated derivative $f’(x)$. Drag the slider to see the tangent line move dynamically along the curve.
+
+
+---
+
+
+#Q
+**Summation and Product Notation**
+
+
+[plot]
+$S(x) = \sum_{n=0}^{5} \frac{(-1)^n}{(2n+1)!}x^{2n+1}$
+$W(N) = 2 \cdot \prod_{n=1}^{N} \frac{(2n)^2}{(2n-1)(2n+1)}$
+[/plot]
+#A
+Desmos can compute summations ($\Sigma$) and products ($\Pi$). The first expression is a Taylor series that approximates $\sin(x)$. The second is the Wallis product, which approximates $\pi$ as you increase the slider for $N$.
+
+
+---
+
+
+#Q
+**A damped sine wave.**
+
+
+[plot]
+$f(x) = e^{-0.3x} \cos(4x)$
+$A=(2,f(2))$
+[/plot]
+#A
+This function models a wave function $f(x)$ whose amplitude, controlled by the $e^{-0.3x}$ term, decreases exponentially over time. This is a common pattern for modelling oscillations in physical systems with friction. Point $A$ is highlighted as a point of interest.
+
+
+---
+
+
+#Q
+**Quartiles and Correlation**
+
+
+[plot]
+$X = [1, 2, 3, 4, 5]$
+$Y = [2, 3, 5, 4, 6]$
+$A=(X,Y)$
+$\operatorname{corr}(X, Y)$
+[/plot]
+#A
+Desmos can create a scatter plot.
+
+
+---
+
+
+#Q
+**Statistical Visualizations**
+
+
+[plot]
+$L=[1,2,2,3,3,3,4,4,4,4,5,5,5,6,6,7, 15]$
+$\operatorname{histogram}(L, 1)$
+$\operatorname{dotplot}(L)$
+$\operatorname{boxplot}(L)$
+[/plot]
+#A
+You can visualize the distribution of a dataset in multiple ways. This example shows a histogram (with bin width 1), a dot plot (showing individual frequencies), and a box plot (showing the five-number summary and an outlier).
+
+
+---
+
+
+#Q
+**A Showcase of Probability Distributions** Note that in Desmos $N(\mu {,}\sigma)$
+
+
+[plot]
+$N = \operatorname{normaldist}(0, 1)$
+$B = \operatorname{binomialdist}(10, 0.5)$
+$T = \operatorname{tdist}(5)$
+$U = \operatorname{uniformdist}(0,5)$
+$P = \operatorname{poissondist}(5)$
+
+
+[/plot]
+#A
+- **Distributions:** We define a standard Normal distribution $N(\mu=0, \sigma=1)$, a Binomial distribution $B(n=10, p=0.5)$, a t-distribution $T$ with $5$ degrees of freedom, a uniform distribution from $0$ to $5$, and a Poisson distribution with $\lambda=5$.
