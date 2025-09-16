@@ -28,7 +28,7 @@ async function fetchResources() {
     ]);
 
     if (!cssResponse.ok) throw new Error(`CSS fetch failed: ${cssResponse.statusText}`);
-    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${jsResponse.statusText}`);
+    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${cssResponse.statusText}`);
 
     const cssContent = await cssResponse.text();
     const jsContent = await jsResponse.text();
@@ -111,20 +111,7 @@ function parseQuizdown(text) {
     return array;
   }
 
-  // ✅ IMPROVED: Clean trailing --- before splitting
-  let questionBlocks = questionText.split(/\n---\n/);
-
-  // Remove trailing empty blocks (caused by trailing ---)
-  while (
-    questionBlocks.length > 0 &&
-    questionBlocks[questionBlocks.length - 1].trim() === ''
-  ) {
-    questionBlocks.pop();
-  }
-
-  // Filter out any remaining blank blocks
-  questionBlocks = questionBlocks.filter(block => block.trim() !== '');
-
+  const questionBlocks = questionText.split(/\n---\n/).filter(block => block.trim() !== '');
   const questionsHtml = questionBlocks.map((block, index) => {
     try {
       block = block.split('\n').filter(line => !line.trim().startsWith('//')).join('\n').trim();
