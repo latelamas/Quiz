@@ -28,7 +28,7 @@ async function fetchResources() {
     ]);
 
     if (!cssResponse.ok) throw new Error(`CSS fetch failed: ${cssResponse.statusText}`);
-    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${cssResponse.statusText}`);
+    if (!jsResponse.ok) throw new Error(`JS fetch failed: ${jsResponse.statusText}`);
 
     const cssContent = await cssResponse.text();
     const jsContent = await jsResponse.text();
@@ -111,7 +111,20 @@ function parseQuizdown(text) {
     return array;
   }
 
-  const questionBlocks = questionText.split(/\n---\n/).filter(block => block.trim() !== '');
+  // ✅ IMPROVED: Clean trailing --- before splitting
+  let questionBlocks = questionText.split(/\n---\n/);
+
+  // Remove trailing empty blocks (caused by trailing ---)
+  while (
+    questionBlocks.length > 0 &&
+    questionBlocks[questionBlocks.length - 1].trim() === ''
+  ) {
+    questionBlocks.pop();
+  }
+
+  // Filter out any remaining blank blocks
+  questionBlocks = questionBlocks.filter(block => block.trim() !== '');
+
   const questionsHtml = questionBlocks.map((block, index) => {
     try {
       block = block.split('\n').filter(line => !line.trim().startsWith('//')).join('\n').trim();
@@ -271,7 +284,7 @@ function createFullHtml(quizTitle, quizBody, cssContent, jsContent) {
     ? `<script src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"><\/script>`
     : '';
   
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="  https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js  "><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${quizTitle}</title><script>MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]}}<\/script><script src="    https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js    "><\/script>${plotScripts}<style>${cssContent}</style></head><body>${quizBody}<script>${jsContent}<\/script></body></html>`;
 }
 
 function generateQuizHtml() {
