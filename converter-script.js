@@ -242,7 +242,7 @@ function parseQuizdown(text) {
       const isMcq = options.length > 0;
       const qId = `q${qNum}`;
       let html = `<section class="question-block" id="${qId}" ${isMcq ? `data-correct-answer="${String.fromCharCode(97 + options.findIndex(opt => opt.correct))}"` : ''} aria-labelledby="${qId}-title">`;
-      html += `<p class="question-number" id="${qId}-number">${qNum}.</p><p class="question-title" id="${qId}-title">${questionTitle}</p>${materialsHtml}`;
+      html += `<p class="question-number" id="${qId}-number">${qNum}.</p><div class="question-title" id="${qId}-title">${questionTitle}</div>${materialsHtml}`;
 
       if (isMcq) {
         html += '<fieldset><div class="options" role="radiogroup">';
