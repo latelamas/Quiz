@@ -75,3 +75,67 @@ button:disabled {
   margin: 0.2em 0 1em 0;
   line-height: 1.4;
 }
+
+/* New styles for saved quizzes */
+.saved-quizzes-container {
+  margin-top: 20px;
+  border-top: 1px solid #ddd;
+  padding: 20px 15px;
+  background: #f8f9fa;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.search-container {
+  margin-bottom: 15px;
+  display: flex;
+  gap: 10px;
+}
+
+.search-container input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.search-container button {
+  padding: 10px 15px;
+  font-size: 16px;
+}
+
+.saved-quiz-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  transition: box-shadow 0.2s;
+}
+
+.saved-quiz-item:hover {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.quiz-info h3 {
+  margin: 0 0 3px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.quiz-date {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+}
+
+.quiz-actions button {
+  padding: 6px 12px;
+  font-size: 14px;
+  margin-left: 8px;
+}
