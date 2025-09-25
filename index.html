@@ -15,8 +15,20 @@
   </div>
   <div class="button-container">
     <button id="runBtn" onclick="runCode()" disabled>Generate Quiz</button>
+    <button id="copyBtn" onclick="copyCode()">Copy HTML</button>
     <button id="downloadBtn" onclick="downloadCode()">Download HTML</button>
+    <button id="saveBtn" onclick="saveQuiz()">Save Quiz</button>
   </div>
+  
+  <div class="saved-quizzes-container">
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search saved quizzes...">
+    </div>
+    <div id="savedQuizzesList">
+      <!-- Saved quizzes will be loaded here -->
+    </div>
+  </div>
+  
   <script src="converter-script.js"></script>
 </body>
 </html>
