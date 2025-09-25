@@ -13,6 +13,7 @@ h1 {
   font-size: 2.5rem;
   text-align: center;
   margin-bottom: 3rem;
+  color: #184e77;
 }
 
 .quiz-section {
@@ -30,6 +31,7 @@ h1 {
   border-left: 10px solid #184e77;
   border-radius: 10px;
   width: 100%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .question-block p {
@@ -62,7 +64,7 @@ h1 {
 
 .plotly-container {
   width: 100%;
-  min-height: 400px; /* Use min-height instead of height */
+  min-height: 400px;
 }
 
 figure,
@@ -107,7 +109,7 @@ summary {
 
 .check-button:hover,
 summary:hover {
-  background-color: #0f2e4d;
+  background-color: #184e77;
 }
 
 summary {
@@ -125,18 +127,17 @@ summary::-webkit-details-marker {
   border-radius: 0;
   display: inline;
   background: none;
-  color: inherit; /* keeps correct/incorrect colors */
-  margin-top: 0.5rem; /* optional spacing above symbol */
+  color: inherit;
+  margin-top: 0.5rem;
 }
 
 .correct {
-  color: #28a745; /* bright green */
+  color: #28a745;
 }
 
 .incorrect {
-  color: #9d0208; /* red for incorrect */
+  color: #9d0208;
 }
-
 
 .explanation {
   margin-top: 1rem;
@@ -161,6 +162,7 @@ summary::-webkit-details-marker {
 
 .math-scroll {
   overflow-x: auto;
+  overflow-y: hidden;
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
 }
@@ -169,16 +171,32 @@ summary::-webkit-details-marker {
   min-width: max-content;
 }
 
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* Stealthy scrollbar for all browsers */
+.math-scroll::-webkit-scrollbar {
+  height: 5px;
 }
 
-/* Select all text nodes that contain backticks using a CSS-only trick? */
-pre, code { /* Not needed here, we want pure backticks in normal text */ }
+.math-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-/* Trick: wrap backticks visually */
-p, span {
-  white-space: pre-wrap; /* preserve spacing */
+.math-scroll::-webkit-scrollbar-thumb {
+  background: rgba(24, 78, 119, 0.3);
+  border-radius: 2px;
+}
+
+.math-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(24, 78, 119, 0.5);
+}
+
+/* Firefox scrollbar */
+.math-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(24, 78, 119, 0.3) transparent;
+}
+
+.math-scroll:hover {
+  scrollbar-color: rgba(24, 78, 119, 0.5) transparent;
 }
 
 span.backtick {
@@ -193,13 +211,11 @@ span.backtick {
   box-shadow: inset 0 0 0 1px rgba(24, 78, 119, 0.15); 
 }
 
-
 mjx-container[mjx-texclass] {
   user-select: auto;
   pointer-events: auto;
 }
 
-/* Block left-clicks using JS-style CSS trick */
 mjx-container::after {
   content: '';
   position: absolute;
@@ -210,7 +226,6 @@ mjx-container::after {
   pointer-events: auto;
 }
 
-/* Styling for the data table */
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -229,14 +244,12 @@ mjx-container::after {
   font-weight: bold;
 }
 
-/* For browsers that support :has() */
 .material-box:has(.data-table:only-of-type) {
   padding: 0;
   border: none;
   background-color: transparent;
 }
 
-/* Fallback for browsers without :has() */
 @supports not (selector(:has(.data-table))) {
   .material-box .data-table:only-of-type {
     padding: 0;
@@ -251,7 +264,6 @@ mjx-container::after {
   background-color: transparent;
 }
 
-/* Prevent left-clicks via overlay */
 mjx-container::after {
   pointer-events: none;
 }
@@ -260,13 +272,105 @@ mjx-container:active {
   pointer-events: none;
 }
 
-@media (max-width: 600px) {
+pre code {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* MOBILE ONLY STYLING */
+@media (max-width: 768px) {
   body {
     padding: 2rem 1rem;
+    font-size: 1.1rem;
   }
-
+  
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+  
   .quiz-section {
+    gap: 2rem;
     max-width: 100%;
-    padding: 0;
+  }
+  
+  .question-block {
+    padding: 1.2rem 1.5rem;
+    border-left-width: 6px;
+  }
+  
+  .question-title {
+    font-size: 1.2rem;
+  }
+  
+  .material-box {
+    padding: 0.8rem 1.2rem;
+  }
+  
+  .options label {
+    margin-bottom: 0.6rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 1rem;
+  }
+  
+  .check-button,
+  summary {
+    margin-top: 1.2rem;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .explanation,
+  .answer-box {
+    padding: 0.8rem 1.2rem;
+    font-size: 0.95rem;
+  }
+  
+  .data-table {
+    font-size: 0.95rem;
+  }
+  
+  .data-table th, .data-table td {
+    padding: 6px;
+  }
+  
+  pre code {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 1.5rem 0.5rem;
+    font-size: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.7rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .question-block {
+    padding: 1rem 1rem;
+    border-left-width: 4px;
+  }
+  
+  .question-title {
+    font-size: 1.1rem;
+  }
+  
+  .check-button,
+  summary {
+    width: 100%;
+    text-align: center;
+    padding: 0.5rem;
+  }
+  
+  .feedback {
+    font-size: 1.1rem;
+  }
+  
+  pre code {
+    font-size: 0.85rem;
   }
 }
